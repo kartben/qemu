@@ -79,8 +79,14 @@ static inline void esp32c3_write_mmu_value(ESP32C3CacheState *s, hwaddr reg_addr
                 cache_word_data[i] = invalid_value;
             }
         } else {
-            if (s->flash_blk != NULL) {
-                blk_pread(s->flash_blk, physical_address, ESP32C3_PAGE_SIZE, cache_data, 0);
+            if (s->flash_image != NULL) {
+                /* Serve the fill from the in-memory image; see esp32c3_cache.h. */
+                const uint64_t end = (uint64_t)physical_address + ESP32C3_PAGE_SIZE;
+                if (end <= s->flash_image_size) {
+                    memcpy(cache_data, s->flash_image + physical_address, ESP32C3_PAGE_SIZE);
+                } else {
+                    memset(cache_data, 0xff, ESP32C3_PAGE_SIZE);
+                }
             }
             if (xts_aes_class->is_flash_enc_enabled(s->xts_aes)) {
                 xts_aes_class->decrypt(s->xts_aes, physical_address, cache_data, ESP32C3_PAGE_SIZE);
@@ -230,6 +236,22 @@ static void esp32c3_cache_realize(DeviceState *dev, Error **errp)
     /* Make sure XTS_AES was set or issue an error */
     if (s->xts_aes == NULL) {
         error_report("[CACHE] XTS_AES controller must be set!");
+    }
+
+    /* Read the flash image once, here, rather than page by page from the MMIO
+     * handler that guest MMU writes land in. See esp32c3_cache.h. */
+    if (s->flash_blk != NULL) {
+        const int64_t len = blk_getlength(s->flash_blk);
+        if (len > 0) {
+            s->flash_image = g_malloc0(len);
+            s->flash_image_size = len;
+            if (blk_pread(s->flash_blk, 0, len, s->flash_image, 0) < 0) {
+                error_report("[CACHE] could not read the flash image");
+                g_free(s->flash_image);
+                s->flash_image = NULL;
+                s->flash_image_size = 0;
+            }
+        }
     }
 }
 

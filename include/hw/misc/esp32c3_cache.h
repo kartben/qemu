@@ -69,6 +69,14 @@ _Static_assert(sizeof(ESP32C3MMUEntry) == sizeof(uint32_t), "MMU Entry size must
 typedef struct {
     SysBusDevice parent;
     BlockBackend *flash_blk;
+    /* The whole flash image, slurped once at realize. Cache fills are driven by
+     * guest MMU writes, i.e. from an MMIO handler inside CPU execution, and a
+     * synchronous blk_pread() there re-enters the block layer's coroutine and
+     * AIO poll from that context. Native tolerates it; an Emscripten build with
+     * Asyncify coroutines traps with "function signature mismatch". Serving the
+     * fills from host memory keeps block I/O out of guest execution entirely. */
+    uint8_t      *flash_image;
+    uint64_t     flash_image_size;
     MemoryRegion iomem;
 
     bool         icache_enable;
