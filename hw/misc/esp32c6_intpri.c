@@ -79,7 +79,7 @@ static void esp32c6_intpri_init(Object *obj)
     }
 }
 
-static void esp32c6_intpri_class_init(ObjectClass *klass, void *data)
+static void esp32c6_intpri_class_init(ObjectClass *klass, const void *data)
 {
     ResettableClass *rc = RESETTABLE_CLASS(klass);
     rc->phases.hold = esp32c6_intpri_reset_hold;

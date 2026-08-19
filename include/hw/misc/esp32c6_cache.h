@@ -12,7 +12,7 @@
 #include "hw/sysbus.h"
 #include "hw/hw.h"
 #include "hw/registerfields.h"
-#include "sysemu/block-backend.h"
+#include "system/block-backend.h"
 
 #define TYPE_ESP32C6_CACHE "esp32c6.cache"
 #define ESP32C6_CACHE(obj)           OBJECT_CHECK(ESP32C6CacheState, (obj), TYPE_ESP32C6_CACHE)

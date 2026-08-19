@@ -354,7 +354,7 @@ static void esp_sha_init(Object *obj)
     sysbus_init_irq(sbd, &s->irq);
 }
 
-static void esp_sha_class_init(ObjectClass *klass, void *data)
+static void esp_sha_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ESPShaClass* esp_sha = ESP_SHA_CLASS(klass);

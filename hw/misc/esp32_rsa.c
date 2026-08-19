@@ -342,7 +342,7 @@ static void esp32_rsa_init(Object *obj)
     sysbus_init_mmio(sbd, &s->iomem);
 }
 
-static void esp32_rsa_class_init(ObjectClass *klass, void *data)
+static void esp32_rsa_class_init(ObjectClass *klass, const void *data)
 {
     ResettableClass *rc = RESETTABLE_CLASS(klass);
     rc->phases.hold = esp32_rsa_reset_hold;

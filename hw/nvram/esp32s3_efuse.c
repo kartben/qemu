@@ -24,7 +24,7 @@ static void esp32s3_efuse_init(Object *obj)
 {
 }
 
-static void esp32s3_efuse_class_init(ObjectClass *klass, void *data)
+static void esp32s3_efuse_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ESP32S3EfuseClass* esp32s3_efuse = ESP32S3_EFUSE_CLASS(klass);

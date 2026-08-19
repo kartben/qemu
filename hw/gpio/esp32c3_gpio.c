@@ -28,7 +28,7 @@ static void esp32c3_gpio_init(Object *obj)
 
 /* If we need to override any function from the parent (reset, realize, ...), it shall be done
  * in this class_init function */
-static void esp32c3_gpio_class_init(ObjectClass *klass, void *data)
+static void esp32c3_gpio_class_init(ObjectClass *klass, const void *data)
 {
 }
 

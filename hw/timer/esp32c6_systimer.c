@@ -13,7 +13,7 @@
 #include "hw/boards.h"
 #include "hw/timer/esp32c6_systimer.h"
 
-static void esp32c6_systimer_class_init(ObjectClass *klass, void *data)
+static void esp32c6_systimer_class_init(ObjectClass *klass, const void *data)
 {
 }
 

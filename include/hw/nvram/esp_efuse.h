@@ -12,7 +12,7 @@
 #include "hw/hw.h"
 #include "hw/registerfields.h"
 #include "hw/sysbus.h"
-#include "sysemu/block-backend.h"
+#include "system/block-backend.h"
 #include "qemu/error-report.h"
 
 #define TYPE_ESP_EFUSE "nvram.esp.efuse"

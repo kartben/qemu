@@ -162,7 +162,7 @@ static void esp32c3_rtc_cntl_init(Object *obj)
 }
 
 
-static void esp32c3_rtc_cntl_class_init(ObjectClass *klass, void *data)
+static void esp32c3_rtc_cntl_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ResettableClass *rc = RESETTABLE_CLASS(klass);

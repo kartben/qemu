@@ -215,11 +215,10 @@ static void esp32_frc_timer_init(Object *obj)
     s->has_alarm = true;
 }
 
-static Property esp32_frc_timer_properties[] = {
-    DEFINE_PROP_END_OF_LIST(),
+static const Property esp32_frc_timer_properties[] = {
 };
 
-static void esp32_frc_timer_class_init(ObjectClass *klass, void *data)
+static void esp32_frc_timer_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ResettableClass *rc = RESETTABLE_CLASS(klass);

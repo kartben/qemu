@@ -69,14 +69,13 @@ static void esp32_gpio_init(Object *obj)
     sysbus_init_irq(sbd, &s->irq);
 }
 
-static Property esp32_gpio_properties[] = {
+static const Property esp32_gpio_properties[] = {
     /* The strap_mode needs to be explicitly set in the instance init, thus, set
      * the default value to 0. */
     DEFINE_PROP_UINT32("strap_mode", Esp32GpioState, strap_mode, 0),
-    DEFINE_PROP_END_OF_LIST(),
 };
 
-static void esp32_gpio_class_init(ObjectClass *klass, void *data)
+static void esp32_gpio_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ResettableClass *rc = RESETTABLE_CLASS(klass);

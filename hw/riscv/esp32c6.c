@@ -21,14 +21,14 @@
 #include "target/riscv/esp_cpu.h"
 #include "hw/riscv/boot.h"
 #include "hw/riscv/numa.h"
-#include "sysemu/device_tree.h"
-#include "sysemu/sysemu.h"
-#include "sysemu/kvm.h"
-#include "sysemu/runstate.h"
-#include "sysemu/reset.h"
+#include "system/device_tree.h"
+#include "system/system.h"
+#include "system/kvm.h"
+#include "system/runstate.h"
+#include "system/reset.h"
 #include "net/net.h"
 #include "elf.h"
-#include "exec/address-spaces.h"
+#include "system/address-spaces.h"
 #include "hw/misc/esp32c6_reg.h"
 #include "hw/misc/esp32c6_cache.h"
 #include "hw/misc/esp32c6_pcr.h"
@@ -515,7 +515,7 @@ static void esp32c6_machine_init(MachineState *machine)
     create_unimplemented_device("esp32c6.hp_peri", 0x20000000, 0x100000);
 }
 
-static void esp32c6_machine_class_init(ObjectClass *oc, void *data)
+static void esp32c6_machine_class_init(ObjectClass *oc, const void *data)
 {
     MachineClass *mc = MACHINE_CLASS(oc);
     mc->desc = "Espressif ESP32-C6 machine";

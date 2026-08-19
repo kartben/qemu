@@ -10,8 +10,8 @@
 #pragma once
 
 #include "hw/sysbus.h"
-#include "exec/memory.h"
-#include "sysemu/block-backend.h"
+#include "system/memory.h"
+#include "system/block-backend.h"
 
 #define TYPE_ESP32C6_SPI_MEM "esp32c6.spi_mem"
 #define ESP32C6_SPI_MEM(obj) OBJECT_CHECK(ESP32C6SpiMemState, (obj), TYPE_ESP32C6_SPI_MEM)

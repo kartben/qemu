@@ -13,7 +13,7 @@
 #include "qemu/osdep.h"
 #include "qemu/module.h"
 #include "qapi/error.h"
-#include "sysemu/sysemu.h"
+#include "system/system.h"
 #include "hw/sysbus.h"
 #include "hw/irq.h"
 #include "hw/char/esp32c3_uart.h"
@@ -102,7 +102,7 @@ static void esp32c3_uart_init(Object *obj)
 }
 
 
-static void esp32c3_uart_class_init(ObjectClass *klass, void *data)
+static void esp32c3_uart_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ESP32C3UARTClass* esp32c3 = ESP32C3_UART_CLASS(klass);

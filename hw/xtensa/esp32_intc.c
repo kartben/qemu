@@ -112,13 +112,12 @@ static void esp32_intmatrix_init(Object *obj)
     qdev_init_gpio_in(DEVICE(s), esp32_intmatrix_irq_handler, ESP32_INT_MATRIX_INPUTS);
 }
 
-static Property esp32_intmatrix_properties[] = {
+static const Property esp32_intmatrix_properties[] = {
     DEFINE_PROP_LINK("cpu0", Esp32IntMatrixState, cpu[0], TYPE_XTENSA_CPU, XtensaCPU *),
     DEFINE_PROP_LINK("cpu1", Esp32IntMatrixState, cpu[1], TYPE_XTENSA_CPU, XtensaCPU *),
-    DEFINE_PROP_END_OF_LIST(),
 };
 
-static void esp32_intmatrix_class_init(ObjectClass *klass, void *data)
+static void esp32_intmatrix_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ResettableClass *rc = RESETTABLE_CLASS(klass);

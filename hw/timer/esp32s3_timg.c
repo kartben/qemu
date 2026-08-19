@@ -10,7 +10,7 @@
 #include "qemu/osdep.h"
 #include "hw/timer/esp32s3_timg.h"
 
-static void esp32s3_timg_class_init(ObjectClass *klass, void *data)
+static void esp32s3_timg_class_init(ObjectClass *klass, const void *data)
 {
     ESPTimgClass* esp = ESP_TIMG_CLASS(klass);
     esp->m_has_t1 = true;

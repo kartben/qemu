@@ -10,7 +10,7 @@
 
 #include "qemu/osdep.h"
 #include "qemu/error-report.h"
-#include "sysemu/dma.h"
+#include "system/dma.h"
 #include "hw/sysbus.h"
 #include "hw/irq.h"
 #include "hw/dma/esp_gdma.h"
@@ -930,9 +930,8 @@ uint64_t esp_gdma_read_register(ESPGdmaState* s, DmaRegister reg)
 
 
 
-static Property esp_gdma_properties[] = {
+static const Property esp_gdma_properties[] = {
     DEFINE_PROP_LINK("soc_mr", ESPGdmaState, soc_mr, TYPE_MEMORY_REGION, MemoryRegion*),
-    DEFINE_PROP_END_OF_LIST(),
 };
 
 
@@ -996,7 +995,7 @@ static void esp_gdma_init(Object *obj)
 }
 
 
-static void esp_gdma_class_init(ObjectClass *klass, void *data)
+static void esp_gdma_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ResettableClass *rc = RESETTABLE_CLASS(klass);

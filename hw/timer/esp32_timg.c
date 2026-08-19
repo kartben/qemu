@@ -634,12 +634,11 @@ static void esp32_timg_init(Object *obj)
     qdev_init_gpio_out_named(DEVICE(sbd), &s->wdt_sys_reset_req, ESP32_TIMG_WDT_SYS_RESET_GPIO, 1);
 }
 
-static Property esp32_timg_properties[] = {
+static const Property esp32_timg_properties[] = {
     DEFINE_PROP_BOOL("wdt_disable", Esp32TimgState, wdt_disable, false),
-    DEFINE_PROP_END_OF_LIST(),
 };
 
-static void esp32_timg_class_init(ObjectClass *klass, void *data)
+static void esp32_timg_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ResettableClass *rc = RESETTABLE_CLASS(klass);

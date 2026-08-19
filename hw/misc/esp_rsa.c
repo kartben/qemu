@@ -432,7 +432,7 @@ static void esp_rsa_init(Object *obj)
     sysbus_init_irq(sbd, &s->irq);
 }
 
-static void esp_rsa_class_init(ObjectClass *klass, void *data)
+static void esp_rsa_class_init(ObjectClass *klass, const void *data)
 {
     ESPRsaClass* esp_rsa = ESP_RSA_CLASS(klass);
     ResettableClass *rc = RESETTABLE_CLASS(klass);

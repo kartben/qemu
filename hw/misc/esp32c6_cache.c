@@ -172,18 +172,14 @@ static void esp32c6_cache_init(Object *obj)
 }
 
 
-static Property esp32c6_cache_properties[] = {
-    DEFINE_PROP_END_OF_LIST(),
-};
 
-static void esp32c6_cache_class_init(ObjectClass *klass, void *data)
+static void esp32c6_cache_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ResettableClass *rc = RESETTABLE_CLASS(klass);
 
     rc->phases.hold = esp32c6_cache_reset_hold;
     dc->realize = esp32c6_cache_realize;
-    device_class_set_props(dc, esp32c6_cache_properties);
 }
 
 static const TypeInfo esp32c6_cache_info = {

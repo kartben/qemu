@@ -190,7 +190,7 @@ static void esp_hmac_init(Object *obj)
     sysbus_init_mmio(sbd, &s->iomem);
 }
 
-static void esp_hmac_class_init(ObjectClass *klass, void *data)
+static void esp_hmac_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ESPHmacClass* esp_hmac = ESP_HMAC_CLASS(klass);

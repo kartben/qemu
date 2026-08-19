@@ -11,7 +11,7 @@
 #include "qemu/osdep.h"
 #include "qemu/log.h"
 #include "qemu/module.h"
-#include "sysemu/sysemu.h"
+#include "system/system.h"
 #include "hw/hw.h"
 #include "hw/sysbus.h"
 #include "hw/registerfields.h"
@@ -500,11 +500,10 @@ static void esp32s3_spi_init(Object *obj)
     qdev_init_gpio_out_named(DEVICE(s), &s->cs_gpio[0], SSI_GPIO_CS, ESP32S3_SPI_CS_COUNT);
 }
 
-static Property esp32s3_spi_properties[] = {
-    DEFINE_PROP_END_OF_LIST(),
+static const Property esp32s3_spi_properties[] = {
 };
 
-static void esp32s3_spi_class_init(ObjectClass *klass, void *data)
+static void esp32s3_spi_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ResettableClass *rc = RESETTABLE_CLASS(klass);

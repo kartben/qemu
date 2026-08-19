@@ -10,7 +10,7 @@
 #include "qemu/osdep.h"
 #include "hw/misc/esp32s3_sha.h"
 
-static void esp32s3_sha_class_init(ObjectClass *klass, void *data)
+static void esp32s3_sha_class_init(ObjectClass *klass, const void *data)
 {
     ESPShaClass* class = ESP_SHA_CLASS(klass);
     class->message_len = ESP32S3_SHA_MESSAGE_SIZE;

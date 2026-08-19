@@ -215,11 +215,10 @@ static void esp32_rtc_cntl_init(Object *obj)
     esp32_rtc_update_clk(s);
 }
 
-static Property esp32_rtc_cntl_properties[] = {
-    DEFINE_PROP_END_OF_LIST(),
+static const Property esp32_rtc_cntl_properties[] = {
 };
 
-static void esp32_rtc_cntl_class_init(ObjectClass *klass, void *data)
+static void esp32_rtc_cntl_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ResettableClass *rc = RESETTABLE_CLASS(klass);

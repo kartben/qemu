@@ -145,7 +145,7 @@ static void esp32s3_gdma_init(Object *obj)
 }
 
 
-static void esp32s3_gdma_class_init(ObjectClass *klass, void *data)
+static void esp32s3_gdma_class_init(ObjectClass *klass, const void *data)
 {
     ESPGdmaClass* class = ESP_GDMA_CLASS(klass);
     /* Make sure all the peripherals are valid */

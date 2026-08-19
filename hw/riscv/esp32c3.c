@@ -21,11 +21,11 @@
 #include "target/riscv/esp_cpu.h"
 #include "hw/riscv/boot.h"
 #include "hw/riscv/numa.h"
-#include "sysemu/device_tree.h"
-#include "sysemu/sysemu.h"
-#include "sysemu/kvm.h"
-#include "sysemu/runstate.h"
-#include "sysemu/reset.h"
+#include "system/device_tree.h"
+#include "system/system.h"
+#include "system/kvm.h"
+#include "system/runstate.h"
+#include "system/reset.h"
 #include "net/net.h"
 #include "elf.h"
 #include "hw/misc/esp32c3_reg.h"
@@ -660,7 +660,7 @@ static void esp32c3_machine_init(MachineState *machine)
 
 
 /* Initialize machine type */
-static void esp32c3_machine_class_init(ObjectClass *oc, void *data)
+static void esp32c3_machine_class_init(ObjectClass *oc, const void *data)
 {
     MachineClass *mc = MACHINE_CLASS(oc);
     mc->desc = "Espressif ESP32-C3 machine";

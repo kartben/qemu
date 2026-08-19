@@ -143,7 +143,7 @@ static void esp32c6_lp_init(Object *obj)
     s->reset_reason = ESP32C6_CHIP_POWER_ON;
 }
 
-static void esp32c6_lp_class_init(ObjectClass *klass, void *data)
+static void esp32c6_lp_class_init(ObjectClass *klass, const void *data)
 {
     ResettableClass *rc = RESETTABLE_CLASS(klass);
     rc->phases.hold = esp32c6_lp_reset_hold;

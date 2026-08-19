@@ -87,12 +87,11 @@ static void esp32c6_jtag_init(Object *obj)
     sysbus_init_mmio(sbd, &s->iomem);
 }
 
-static Property esp32c6_jtag_properties[] = {
+static const Property esp32c6_jtag_properties[] = {
     DEFINE_PROP_CHR("chardev", ESP32C6UsbJtagState, chr),
-    DEFINE_PROP_END_OF_LIST(),
 };
 
-static void esp32c6_jtag_class_init(ObjectClass *klass, void *data)
+static void esp32c6_jtag_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ResettableClass *rc = RESETTABLE_CLASS(klass);

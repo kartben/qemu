@@ -108,7 +108,7 @@ static void esp32c6_pcr_init(Object *obj)
     sysbus_init_mmio(sbd, &s->iomem);
 }
 
-static void esp32c6_pcr_class_init(ObjectClass *klass, void *data)
+static void esp32c6_pcr_class_init(ObjectClass *klass, const void *data)
 {
 }
 

@@ -15,7 +15,7 @@ static void esp32c6_uart_init(Object *obj)
 {
 }
 
-static void esp32c6_uart_class_init(ObjectClass *klass, void *data)
+static void esp32c6_uart_class_init(ObjectClass *klass, const void *data)
 {
 }
 

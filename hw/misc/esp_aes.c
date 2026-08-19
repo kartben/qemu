@@ -446,7 +446,7 @@ static void esp_aes_init(Object *obj)
     sysbus_init_irq(sbd, &s->irq);
 }
 
-static void esp_aes_class_init(ObjectClass *klass, void *data)
+static void esp_aes_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ESPAesClass* esp_aes = ESP_AES_CLASS(klass);

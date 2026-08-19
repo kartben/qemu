@@ -338,7 +338,7 @@ static void esp32c3_xts_aes_init(Object *obj)
     sysbus_init_mmio(sbd, &s->iomem);
 }
 
-static void esp32c3_xts_aes_class_init(ObjectClass *klass, void *data)
+static void esp32c3_xts_aes_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ESP32C3XtsAesClass* esp32c3_xts_aes = ESP32C3_XTS_AES_CLASS(klass);

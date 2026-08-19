@@ -17,7 +17,7 @@ static void esp32c6_gpio_init(Object *obj)
     object_property_set_int(obj, "strap_mode", ESP32C6_STRAP_MODE_FLASH_BOOT, &error_fatal);
 }
 
-static void esp32c6_gpio_class_init(ObjectClass *klass, void *data)
+static void esp32c6_gpio_class_init(ObjectClass *klass, const void *data)
 {
 }
 

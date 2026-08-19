@@ -152,7 +152,7 @@ static void esp32s3_clock_init(Object *obj)
     }
 }
 
-static void esp32s3_clock_class_init(ObjectClass *klass, void *data)
+static void esp32s3_clock_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ESP32S3ClockClass* esp32s3_clock = ESP32S3_CLOCK_CLASS(klass);

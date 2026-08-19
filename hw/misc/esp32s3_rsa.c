@@ -11,7 +11,7 @@
 #include "qemu/osdep.h"
 #include "hw/misc/esp32s3_rsa.h"
 
-static void esp32s3_rsa_class_init(ObjectClass *klass, void *data)
+static void esp32s3_rsa_class_init(ObjectClass *klass, const void *data)
 {
     ESPRsaClass* class = ESP_RSA_CLASS(klass);
     class->rsa_mem_blk_size = ESP32S3_RSA_MEM_BLK_SIZE;

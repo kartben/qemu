@@ -106,7 +106,7 @@ static void esp32_aes_init(Object *obj)
     sysbus_init_mmio(sbd, &s->iomem);
 }
 
-static void esp32_aes_class_init(ObjectClass *klass, void *data)
+static void esp32_aes_class_init(ObjectClass *klass, const void *data)
 {
     ResettableClass *rc = RESETTABLE_CLASS(klass);
     rc->phases.hold = esp32_aes_reset_hold;

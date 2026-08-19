@@ -20,7 +20,7 @@
 #error "ESP RISC-V Core only works in system emulation and in SOFTMMU configuration"
 #endif
 
-#include "hw/core/tcg-cpu-ops.h"
+#include "accel/tcg/cpu-ops.h"
 
 #define ESP_CPU_IRQ_LINES_NAME "espressif-cpu-irq-lines"
 

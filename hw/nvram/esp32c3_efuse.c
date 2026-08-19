@@ -44,7 +44,7 @@ static void esp32c3_efuse_init(Object *obj)
      * calling the current function. */
 }
 
-static void esp32c3_efuse_class_init(ObjectClass *klass, void *data)
+static void esp32c3_efuse_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ESP32C3EfuseClass* esp32c3_efuse = ESP32C3_EFUSE_CLASS(klass);

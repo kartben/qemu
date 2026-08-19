@@ -132,7 +132,7 @@ static void esp32_ledc_init(Object *obj)
     }
 }
 
-static void esp32_ledc_class_init(ObjectClass *klass, void *data)
+static void esp32_ledc_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     dc->realize = esp32_ledc_realize;

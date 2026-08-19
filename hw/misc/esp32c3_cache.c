@@ -21,7 +21,7 @@
 #include "hw/qdev-properties.h"
 #include "hw/misc/esp32c3_cache.h"
 #include "hw/misc/esp32c3_xts_aes.h"
-#include "sysemu/block-backend-io.h"
+#include "system/block-backend-io.h"
 #include "hw/misc/esp32c3_reg.h"
 
 
@@ -256,18 +256,14 @@ static void esp32c3_cache_init(Object *obj)
     sysbus_init_mmio(sbd, &s->iomem);
 }
 
-static Property esp32c3_cache_properties[] = {
-    DEFINE_PROP_END_OF_LIST(),
-};
 
-static void esp32c3_cache_class_init(ObjectClass *klass, void *data)
+static void esp32c3_cache_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ResettableClass *rc = RESETTABLE_CLASS(klass);
 
     rc->phases.hold = esp32c3_cache_reset_hold;
     dc->realize = esp32c3_cache_realize;
-    device_class_set_props(dc, esp32c3_cache_properties);
 }
 
 static const TypeInfo esp32c3_cache_info = {

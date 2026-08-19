@@ -14,8 +14,8 @@
 #include "hw/sysbus.h"
 #include "hw/registerfields.h"
 #include "hw/misc/esp32c6_spi_mem.h"
-#include "sysemu/block-backend-io.h"
-#include "exec/memory.h"
+#include "system/block-backend-io.h"
+#include "system/memory.h"
 
 #define SPI_MEM_DEBUG 0
 
@@ -158,7 +158,7 @@ static void esp32c6_spi_mem_init(Object *obj)
     s->mmu_power_ctrl = R_SPI_MEM_MMU_POWER_CTRL_FORCE_PU_MASK;
 }
 
-static void esp32c6_spi_mem_class_init(ObjectClass *klass, void *data)
+static void esp32c6_spi_mem_class_init(ObjectClass *klass, const void *data)
 {
 }
 

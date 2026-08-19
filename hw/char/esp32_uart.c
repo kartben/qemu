@@ -15,7 +15,7 @@
 #include "qemu/module.h"
 #include "qapi/error.h"
 #include "qemu/error-report.h"
-#include "sysemu/sysemu.h"
+#include "system/system.h"
 #include "chardev/char-fe.h"
 #include "hw/registerfields.h"
 #include "hw/sysbus.h"
@@ -370,12 +370,11 @@ static void esp32_uart_init(Object *obj)
 }
 
 
-static Property esp32_uart_properties[] = {
+static const Property esp32_uart_properties[] = {
     DEFINE_PROP_CHR("chardev", ESP32UARTState, chr),
-    DEFINE_PROP_END_OF_LIST(),
 };
 
-static void esp32_uart_class_init(ObjectClass *klass, void *data)
+static void esp32_uart_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ESP32UARTClass *class = ESP32_UART_CLASS(klass);

@@ -15,7 +15,7 @@ static void esp32c6_clock_init(Object *obj)
 {
 }
 
-static void esp32c6_clock_class_init(ObjectClass *klass, void *data)
+static void esp32c6_clock_class_init(ObjectClass *klass, const void *data)
 {
 }
 

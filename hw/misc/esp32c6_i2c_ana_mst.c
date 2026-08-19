@@ -130,7 +130,7 @@ static void esp32c6_i2c_ana_mst_realize(DeviceState *dev, Error **errp)
     s->regs[0x66][8] = 0xC0;
 }
 
-static void esp32c6_i2c_ana_mst_class_init(ObjectClass *klass, void *data)
+static void esp32c6_i2c_ana_mst_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
 

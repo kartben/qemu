@@ -630,7 +630,7 @@ static void esp_systimer_init(Object *obj)
 }
 
 
-static void esp_systimer_class_init(ObjectClass *klass, void *data)
+static void esp_systimer_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ESPSysTimerClass *class = ESP_SYSTIMER_CLASS(klass);

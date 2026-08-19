@@ -11,7 +11,7 @@
 #include "qemu/osdep.h"
 #include "hw/misc/esp32s3_ds.h"
 
-static void esp32s3_ds_class_init(ObjectClass *klass, void *data)
+static void esp32s3_ds_class_init(ObjectClass *klass, const void *data)
 {
     ESPDsClass* class = ESP_DS_CLASS(klass);
     class->mem_blk_size = ESP32S3_DS_MEM_BLK_SIZE;

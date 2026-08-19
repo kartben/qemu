@@ -291,7 +291,7 @@ static bool esp32c3_is_periph_invalid(ESPGdmaState *s, GdmaPeripheral per)
     return per == GDMA_SPI3 || per == GDMA_I2S1 || per == GDMA_LCDCAM;
 }
 
-static void esp32c3_gdma_class_init(ObjectClass *klass, void *data)
+static void esp32c3_gdma_class_init(ObjectClass *klass, const void *data)
 {
     ESPGdmaClass* class = ESP_GDMA_CLASS(klass);
     class->is_periph_invalid = esp32c3_is_periph_invalid;

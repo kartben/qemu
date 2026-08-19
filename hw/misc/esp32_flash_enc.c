@@ -270,7 +270,7 @@ static void esp32_flash_encryption_reset_hold(Object *obj, ResetType type)
     s->encryption_done = false;
 }
 
-static void esp32_flash_encryption_class_init(ObjectClass *klass, void *data)
+static void esp32_flash_encryption_class_init(ObjectClass *klass, const void *data)
 {
     ResettableClass *rc = RESETTABLE_CLASS(klass);
     rc->phases.hold = esp32_flash_encryption_reset_hold;

@@ -17,7 +17,8 @@
 #include "hw/registerfields.h"
 #include "hw/irq.h"
 #include "hw/qdev-properties.h"
-#include "sysemu/reset.h"
+#include "system/reset.h"
+#include "hw/core/sysemu-cpu-ops.h"
 #include "esp_cpu.h"
 
 #define BIT_SET(reg, bit)   ((reg) & BIT(bit))
@@ -108,7 +109,8 @@ static RISCVException esp_cpu_csr_read(CPURISCVState *env, int csrno, target_ulo
 }
 
 
-static RISCVException esp_cpu_csr_write(CPURISCVState *env, int csrno, target_ulong new_value) {
+static RISCVException esp_cpu_csr_write(CPURISCVState *env, int csrno,
+                                        target_ulong new_value, uintptr_t ra) {
     EspRISCVCPU *s = esp_cpu_riscv_to_cpu(env);
 
     if (csrno == ESP_CPU_CSR_MCYCLE_U) {
@@ -167,7 +169,8 @@ static RISCVException esp_cpu_mie_csr_read(CPURISCVState *env, int csrno,
 }
 
 static RISCVException esp_cpu_mie_csr_write(CPURISCVState *env, int csrno,
-                                            target_ulong new_value)
+                                            target_ulong new_value,
+                                            uintptr_t ra)
 {
     EspRISCVCPU *s = esp_cpu_riscv_to_cpu(env);
     s->mie_enabled = (uint32_t) new_value;
@@ -378,6 +381,7 @@ static void esp_cpu_realize(DeviceState *dev, Error **errp)
 }
 
 static struct TCGCPUOps tcg_ops = { 0 };
+static struct SysemuCPUOps sysemu_ops = { 0 };
 
 static void esp_cpu_override_tcg_interrupts(Object *obj)
 {
@@ -460,15 +464,14 @@ static void esp_cpu_init(Object *obj)
     };
 }
 
-static Property riscv_harts_props[] = {
+static const Property riscv_harts_props[] = {
     DEFINE_PROP_UINT32("hartid-base", EspRISCVCPU, hartid_base, 0),
     DEFINE_PROP_BOOL("has-pma", EspRISCVCPU, has_pma, false),
     DEFINE_PROP_BOOL("mie-as-bitmap", EspRISCVCPU, mie_as_bitmap, false),
-    DEFINE_PROP_END_OF_LIST(),
 };
 
 
-static void esp_cpu_class_init(ObjectClass *klass, void *data)
+static void esp_cpu_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     CPUClass *cc = CPU_CLASS(klass);
@@ -480,9 +483,12 @@ static void esp_cpu_class_init(ObjectClass *klass, void *data)
                                     &cpuclass->parent_realize);
 
     /* Override has_work so the CPU can wake from WFI with our custom
-     * interrupt mechanism (MIE CSR is repurposed on C6). */
-    cpuclass->parent_has_work = cc->has_work;
-    cc->has_work = esp_cpu_has_work;
+     * interrupt mechanism (MIE CSR is repurposed on C6). It lives in the
+     * const SysemuCPUOps table, so copy that table to replace one field. */
+    memcpy(&sysemu_ops, cc->sysemu_ops, sizeof(sysemu_ops));
+    cpuclass->parent_has_work = sysemu_ops.has_work;
+    sysemu_ops.has_work = esp_cpu_has_work;
+    cc->sysemu_ops = &sysemu_ops;
 }
 
 static const TypeInfo esp_cpu_info = {

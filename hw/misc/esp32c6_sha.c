@@ -10,7 +10,7 @@
 #include "qemu/osdep.h"
 #include "hw/misc/esp32c6_sha.h"
 
-static void esp32c6_sha_class_init(ObjectClass *klass, void *data)
+static void esp32c6_sha_class_init(ObjectClass *klass, const void *data)
 {
 }
 

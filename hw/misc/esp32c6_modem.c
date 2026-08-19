@@ -90,7 +90,7 @@ static void esp32c6_modem_init(Object *obj)
     sysbus_init_mmio(sbd, &s->iomem);
 }
 
-static void esp32c6_modem_class_init(ObjectClass *klass, void *data)
+static void esp32c6_modem_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     dc->realize = esp32c6_modem_realize;

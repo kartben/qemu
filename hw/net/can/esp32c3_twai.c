@@ -60,7 +60,7 @@ static void esp32c3_twai_init(Object *obj)
     /* Parent class init is called automatically by QOM */
 }
 
-static void esp32c3_twai_class_init(ObjectClass *klass, void *data)
+static void esp32c3_twai_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ResettableClass *rc = RESETTABLE_CLASS(klass);

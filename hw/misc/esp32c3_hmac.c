@@ -11,7 +11,7 @@
 #include "qemu/osdep.h"
 #include "hw/misc/esp32c3_hmac.h"
 
-static void esp32c3_hmac_class_init(ObjectClass *klass, void *data)
+static void esp32c3_hmac_class_init(ObjectClass *klass, const void *data)
 {
     ESPHmacClass *class = ESP_HMAC_CLASS(klass);
     class->date = ESP32C3_HMAC_DATE_REG_VALUE;

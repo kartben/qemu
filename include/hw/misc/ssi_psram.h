@@ -4,7 +4,7 @@
 #include "hw/sysbus.h"
 #include "hw/ssi/ssi.h"
 #include "qom/object.h"
-#include "exec/memory.h"
+#include "system/memory.h"
 
 
 typedef enum PsramState {

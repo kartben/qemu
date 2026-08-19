@@ -349,13 +349,12 @@ static void esp32c6_intmatrix_init(Object *obj)
                              ESP32C6_CPU_INT_COUNT + 1);
 }
 
-static Property esp32c6_intmatrix_props[] = {
+static const Property esp32c6_intmatrix_props[] = {
     DEFINE_PROP_LINK("cpu", ESP32C6IntMatrixState, cpu,
                      TYPE_ESP_RISCV_CPU, EspRISCVCPU *),
-    DEFINE_PROP_END_OF_LIST(),
 };
 
-static void esp32c6_intmatrix_class_init(ObjectClass *klass, void *data)
+static void esp32c6_intmatrix_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
     ResettableClass *rc = RESETTABLE_CLASS(klass);
