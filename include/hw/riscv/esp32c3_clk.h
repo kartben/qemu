@@ -57,6 +57,10 @@ typedef struct ESP32C3ClockState {
     uint32_t levels;
 
     uint32_t sys_ext_dev_enc_dec_ctrl;
+
+    /* RTC fast-memory CRC: what the ROM computes before a deep sleep. */
+    uint32_t rtc_fastmem_config;
+    uint32_t rtc_fastmem_crc;
 } ESP32C3ClockState;
 
 typedef struct ESP32C3ClockClass {

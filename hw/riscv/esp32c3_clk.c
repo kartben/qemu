@@ -68,6 +68,12 @@ static uint64_t esp32c3_clock_read(void *opaque, hwaddr addr, unsigned int size)
         case A_SYSTEM_EXTERNAL_DEVICE_ENCRYPT_DECRYPT_CONTROL:
             r = s->sys_ext_dev_enc_dec_ctrl;
             break;
+        case A_SYSTEM_RTC_FASTMEM_CONFIG:
+            r = s->rtc_fastmem_config;
+            break;
+        case A_SYSTEM_RTC_FASTMEM_CRC:
+            r = s->rtc_fastmem_crc;
+            break;
         default:
 #if CLOCK_WARNING
             warn_report("[CLOCK] Unsupported read from %08lx\n", addr);
@@ -91,6 +97,29 @@ static void esp32c3_clock_write(void *opaque, hwaddr addr, uint64_t value,
             break;
         case A_SYSTEM_EXTERNAL_DEVICE_ENCRYPT_DECRYPT_CONTROL:
             s->sys_ext_dev_enc_dec_ctrl = value;
+            break;
+
+        /*
+         * The RTC fast-memory CRC, which the ROM computes over the wake stub
+         * before entering a deep sleep and checks again on the way out. It
+         * starts the engine with RTC_MEM_CRC_START and then spins on
+         * RTC_MEM_CRC_FINISH, so a model that ignores this register hangs the
+         * guest right there - which is where deep sleep stopped before.
+         *
+         * There is no hardware to be faithful to here beyond the handshake:
+         * the memory never decays under emulation, so the check exists only to
+         * be passed. Finish immediately and leave the digest alone, so the
+         * value the ROM stores before the sleep is the one it reads after.
+         */
+        case A_SYSTEM_RTC_FASTMEM_CONFIG:
+            s->rtc_fastmem_config = FIELD_DP32(value, SYSTEM_RTC_FASTMEM_CONFIG,
+                                               RTC_MEM_CRC_FINISH,
+                                               FIELD_EX32(value,
+                                                          SYSTEM_RTC_FASTMEM_CONFIG,
+                                                          RTC_MEM_CRC_START));
+            break;
+        case A_SYSTEM_RTC_FASTMEM_CRC:
+            s->rtc_fastmem_crc = value;
             break;
         default:
 #if CLOCK_WARNING
