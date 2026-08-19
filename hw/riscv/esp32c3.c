@@ -49,6 +49,7 @@
 #include "hw/i2c/esp32_i2c.h"
 #include "hw/i2c/host_i2c.h"
 #include "hw/ssi/esp32c3_gpspi.h"
+#include "hw/ssi/host_spi.h"
 #include "hw/misc/unimp.h"
 #include "hw/misc/esp32c3_jtag.h"
 #include "hw/dma/esp32c3_gdma.h"
@@ -213,7 +214,8 @@ static void esp32c3_reset_request(void* opaque, int n, int level)
  * but it never sees the edge that ends one command and starts the next, and a
  * flash answers the second command with the tail of the first.
  *
- * One line per peripheral, in the order they were added, so the first is CS0.
+ * Each peripheral gets the line its own `cs` property names, which the SSI bus
+ * already keeps unique, so `-device <part>,bus=gpspi,cs=1` means what it says.
  */
 static void esp32c3_gpspi2_connect_cs(Notifier *notifier, void *data)
 {
@@ -222,19 +224,17 @@ static void esp32c3_gpspi2_connect_cs(Notifier *notifier, void *data)
     DeviceState *master = DEVICE(&ms->gpspi2);
     BusState *bus = qdev_get_child_bus(master, "gpspi");
     BusChild *kid;
-    int cs = 0;
 
     QTAILQ_FOREACH(kid, &bus->children, sibling) {
+        uint8_t cs = SSI_PERIPHERAL(kid->child)->cs_index;
+
         if (cs >= ESP32C3_GPSPI_CS_COUNT) {
-            warn_report("esp32c3: more than %d devices on GP-SPI2; "
-                        "the rest have no chip select",
-                        ESP32C3_GPSPI_CS_COUNT);
-            break;
+            warn_report("esp32c3: GP-SPI2 has no chip select %u", cs);
+            continue;
         }
         qdev_connect_gpio_out_named(master, SSI_GPIO_CS, cs,
                                     qdev_get_gpio_in_named(kid->child,
                                                            SSI_GPIO_CS, 0));
-        cs++;
     }
 }
 
@@ -579,6 +579,13 @@ static void esp32c3_machine_init(MachineState *machine)
         memory_region_add_subregion_overlap(sys_mem, DR_REG_SPI2_BASE, mr, 0);
         sysbus_connect_irq(SYS_BUS_DEVICE(&ms->gpspi2), 0,
                            qdev_get_gpio_in(intmatrix_dev, ETS_SPI2_INTR_SOURCE));
+
+        /* Whatever the browser has soldered to CS0 answers through this one
+         * peripheral, the SPI counterpart of the I2C slave above. See
+         * hw/ssi/host_spi.c. It takes CS0, which is where every chip the
+         * page models sits; another line needs another instance. */
+        ssi_create_peripheral(ms->gpspi2.spi, TYPE_HOST_SPI);
+
         ms->gpspi2_done.notify = esp32c3_gpspi2_connect_cs;
         qemu_add_machine_init_done_notifier(&ms->gpspi2_done);
     }

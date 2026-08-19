@@ -79,13 +79,13 @@ static void set_data_byte(Esp32C3GpSpiState *s, unsigned int i, uint8_t value)
                          | ((uint32_t)value << shift);
 }
 
-/** Clock out the bytes of a command or address word, most significant first. */
-static void esp32c3_gpspi_send_word(Esp32C3GpSpiState *s, uint32_t word,
-                                    unsigned int bytes)
+/** Lay a command or address word into the run, most significant byte first. */
+static unsigned int put_word(uint8_t *buf, uint32_t word, unsigned int bytes)
 {
     for (unsigned int i = 0; i < bytes; i++) {
-        ssi_transfer(s->spi, (word >> (8 * (bytes - 1 - i))) & 0xff);
+        buf[i] = (word >> (8 * (bytes - 1 - i))) & 0xff;
     }
+    return bytes;
 }
 
 static void esp32c3_gpspi_cs_set(Esp32C3GpSpiState *s, int level)
@@ -102,19 +102,40 @@ static void esp32c3_gpspi_cs_set(Esp32C3GpSpiState *s, int level)
 static void esp32c3_gpspi_transaction(Esp32C3GpSpiState *s,
                                       const Esp32C3GpSpiTransaction *t)
 {
+    /* Command and address are 2 and 4 bytes at most; data is the W buffer. */
+    uint8_t run[8 + ESP32C3_GPSPI_BUF_WORDS * 4];
+    unsigned int prefix = 0;
+    unsigned int len;
+    bool cs_release = FIELD_EX32(s->misc_reg, GPSPI_MISC, CS_KEEP_ACTIVE) == 0;
+
     if (!s->cs_held) {
         esp32c3_gpspi_cs_set(s, 0);
     }
 
-    esp32c3_gpspi_send_word(s, t->cmd, t->cmd_bytes);
-    esp32c3_gpspi_send_word(s, t->addr, t->addr_bytes);
-
+    prefix += put_word(run + prefix, t->cmd, t->cmd_bytes);
+    prefix += put_word(run + prefix, t->addr, t->addr_bytes);
     for (unsigned int i = 0; i < t->data_bytes; i++) {
-        uint8_t out = t->data_out ? data_byte(s, i) : 0xff;
-        uint32_t in = ssi_transfer(s->spi, out);
+        /* A read-only phase still has to clock something out. */
+        run[prefix + i] = t->data_out ? data_byte(s, i) : 0xff;
+    }
+    len = prefix + t->data_bytes;
 
-        if (t->data_in) {
-            set_data_byte(s, i, in & 0xff);
+    /*
+     * One call when the peripheral can take the whole run (the browser bridge
+     * does, and a round trip per byte would be unaffordable), a byte at a time
+     * for everything else. The prefix travels with it either way: on the wire
+     * a command and its data are one unbroken stream, and a device that
+     * decodes the stream needs to see the command that started it.
+     */
+    if (!ssi_transfer_buffer(s->spi, run, run, len, cs_release)) {
+        for (unsigned int i = 0; i < len; i++) {
+            run[i] = ssi_transfer(s->spi, run[i]) & 0xff;
+        }
+    }
+
+    if (t->data_in) {
+        for (unsigned int i = 0; i < t->data_bytes; i++) {
+            set_data_byte(s, i, run[prefix + i]);
         }
     }
 
@@ -124,7 +145,7 @@ static void esp32c3_gpspi_transaction(Esp32C3GpSpiState *s,
      * command. The driver says so with CS_KEEP_ACTIVE, set for every buffer of
      * a transfer but the last.
      */
-    s->cs_held = FIELD_EX32(s->misc_reg, GPSPI_MISC, CS_KEEP_ACTIVE) != 0;
+    s->cs_held = !cs_release;
     if (!s->cs_held) {
         esp32c3_gpspi_cs_set(s, 1);
     }

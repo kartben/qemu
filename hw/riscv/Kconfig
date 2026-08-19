@@ -140,6 +140,7 @@ config RISCV_ESP32C3
     select CAN_SJA1000
     select I2C
     select HOST_I2C
+    select HOST_SPI
     select ESP_RGB
 
 config RISCV_ESP32C6

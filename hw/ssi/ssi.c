@@ -153,6 +153,34 @@ SSIBus *ssi_create_bus(DeviceState *parent, const char *name)
     return SSI_BUS(bus);
 }
 
+/** Whether this peripheral's chip select currently reads as asserted. */
+static bool ssi_peripheral_selected(SSIPeripheral *dev)
+{
+    SSIPeripheralClass *ssc = dev->spc;
+
+    return (dev->cs && ssc->cs_polarity == SSI_CS_HIGH) ||
+           (!dev->cs && ssc->cs_polarity == SSI_CS_LOW) ||
+           ssc->cs_polarity == SSI_CS_NONE;
+}
+
+bool ssi_transfer_buffer(SSIBus *bus, const uint8_t *tx, uint8_t *rx,
+                         uint32_t len, bool cs_release)
+{
+    BusState *b = BUS(bus);
+    BusChild *kid;
+
+    QTAILQ_FOREACH(kid, &b->children, sibling) {
+        SSIPeripheral *peripheral = SSI_PERIPHERAL(kid->child);
+        SSIPeripheralClass *ssc = SSI_PERIPHERAL_GET_CLASS(peripheral);
+
+        if (ssc->transfer_buffer && ssi_peripheral_selected(peripheral) &&
+            ssc->transfer_buffer(peripheral, tx, rx, len, cs_release)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 uint32_t ssi_transfer(SSIBus *bus, uint32_t val)
 {
     BusState *b = BUS(bus);

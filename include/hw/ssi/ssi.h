@@ -54,6 +54,17 @@ struct SSIPeripheralClass {
      * always be called for the device for every txrx access to the parent bus
      */
     uint32_t (*transfer_raw)(SSIPeripheral *dev, uint32_t val);
+
+    /*
+     * Optional. Exchange a whole run of bytes in one call instead of one
+     * transfer() per byte, for a peripheral whose answer has to be fetched
+     * from somewhere with a per-call cost. @cs_release says the controller
+     * drops the select after this run, which is what tells a device the
+     * message ended. Return false to decline; the caller then clocks the run
+     * a byte at a time as usual.
+     */
+    bool (*transfer_buffer)(SSIPeripheral *dev, const uint8_t *tx, uint8_t *rx,
+                            uint32_t len, bool cs_release);
 };
 
 struct SSIPeripheral {
@@ -111,6 +122,23 @@ bool ssi_realize_and_unref(DeviceState *dev, SSIBus *bus, Error **errp);
 SSIBus *ssi_create_bus(DeviceState *parent, const char *name);
 
 uint32_t ssi_transfer(SSIBus *bus, uint32_t val);
+
+/**
+ * ssi_transfer_buffer: clock a whole run through the selected peripheral.
+ *
+ * @bus: the SSI bus
+ * @tx: bytes to shift out
+ * @rx: where the bytes shifted in land; may alias @tx
+ * @len: length of both
+ * @cs_release: whether the controller deasserts the select after this run
+ *
+ * Returns true when a selected peripheral answered the whole run (see
+ * SSIPeripheralClass::transfer_buffer). Returns false when none did, and the
+ * caller should fall back to ssi_transfer() per byte, which is what every
+ * ordinary device wants.
+ */
+bool ssi_transfer_buffer(SSIBus *bus, const uint8_t *tx, uint8_t *rx,
+                         uint32_t len, bool cs_release);
 
 DeviceState *ssi_get_cs(SSIBus *bus, uint8_t cs_index);
 
