@@ -811,6 +811,9 @@ void tcg_gen_call6(void *func, TCGHelperInfo *, TCGTemp *ret,
 void tcg_gen_call7(void *func, TCGHelperInfo *, TCGTemp *ret,
                    TCGTemp *, TCGTemp *, TCGTemp *, TCGTemp *,
                    TCGTemp *, TCGTemp *, TCGTemp *);
+void tcg_gen_call8(void *func, TCGHelperInfo *, TCGTemp *ret,
+                   TCGTemp *, TCGTemp *, TCGTemp *, TCGTemp *,
+                   TCGTemp *, TCGTemp *, TCGTemp *, TCGTemp *);
 
 TCGOp *tcg_emit_op(TCGOpcode opc, unsigned nargs);
 void tcg_op_remove(TCGContext *s, TCGOp *op);
@@ -988,8 +991,7 @@ uint64_t dup_const(unsigned vece, uint64_t c);
      ? (  (VECE) == MO_8  ? 0x0101010101010101ull * (uint8_t)(C)   \
         : (VECE) == MO_16 ? 0x0001000100010001ull * (uint16_t)(C)  \
         : (VECE) == MO_32 ? 0x0000000100000001ull * (uint32_t)(C)  \
-        : (VECE) == MO_64 ? (uint64_t)(C)                          \
-        : (qemu_build_not_reached_always(), 0))                    \
+        : dup_const(VECE, C))                                      \
      : dup_const(VECE, C))
 
 static inline const TCGOpcode *tcg_swap_vecop_list(const TCGOpcode *n)

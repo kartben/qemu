@@ -1267,8 +1267,20 @@ endif
 
 slirp = not_found
 if not get_option('slirp').auto() or have_system
-  slirp = dependency('slirp', required: get_option('slirp'),
-                     method: 'pkg-config')
+  slirp_dep = dependency('slirp', required: get_option('slirp'),
+                     method: 'pkg-config',
+                     static: true)
+
+  # https://gitlab.freedesktop.org/slirp/libslirp/-/merge_requests/134
+  slirp_cflags = []
+  if host_os == 'windows' and get_option('prefer_static')
+    slirp_cflags += ['-DLIBSLIRP_STATIC'] 
+  endif
+
+  slirp = declare_dependency(dependencies: [slirp_dep],
+                          compile_args: slirp_cflags,
+                          version: slirp_dep.version())
+
   # slirp < 4.7 is incompatible with CFI support in QEMU.  This is because
   # it passes function pointers within libslirp as callbacks for timers.
   # When using a system-wide shared libslirp, the type information for the

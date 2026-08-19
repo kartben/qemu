@@ -549,6 +549,8 @@ struct CPUArchState {
     struct CPUWatchpoint *cpu_watchpoint[MAX_NDBREAK];
     /* Breakpoints for IBREAK registers */
     struct CPUBreakpoint *cpu_breakpoint[MAX_NIBREAK];
+    /* Pointer to any kind of extension of basic Xtensa CPU.*/
+    void* ext;
 };
 
 /**

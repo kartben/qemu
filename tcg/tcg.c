@@ -2762,6 +2762,15 @@ void tcg_gen_call7(void *func, TCGHelperInfo *info, TCGTemp *ret, TCGTemp *t1,
     tcg_gen_callN(func, info, ret, args);
 }
 
+void tcg_gen_call8(void *func, TCGHelperInfo *info, TCGTemp *ret, TCGTemp *t1,
+                   TCGTemp *t2, TCGTemp *t3, TCGTemp *t4,
+                   TCGTemp *t5, TCGTemp *t6, TCGTemp *t7,
+                   TCGTemp *t8)
+{
+    TCGTemp *args[8] = { t1, t2, t3, t4, t5, t6, t7 , t8};
+    tcg_gen_callN(func, info, ret, args);
+}
+
 static void tcg_reg_alloc_start(TCGContext *s)
 {
     int i, n;

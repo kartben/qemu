@@ -128,3 +128,18 @@ config XIANGSHAN_KUNMINGHU
     select RISCV_APLIC
     select RISCV_IMSIC
     select SERIAL_MM
+
+config RISCV_ESP32C3
+    bool
+    default y
+    depends on RISCV32
+    select OPENCORES_ETH
+    select UNIMP
+    select ESP_RGB
+
+config RISCV_ESP32C6
+    bool
+    default y
+    depends on RISCV32
+    select OPENCORES_ETH
+    select UNIMP

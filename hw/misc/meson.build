@@ -145,6 +145,78 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
 
 system_ss.add(when: 'CONFIG_MSF2', if_true: files('msf2-sysreg.c'))
 system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
+system_ss.add(when: 'CONFIG_XTENSA_ESP32', if_true: files(
+  'esp32_crosscore_int.c',
+  'esp32_dport.c',
+  'esp32_rng.c',
+  'esp32_rtc_cntl.c',
+  'esp32_sha.c',
+  'esp32_aes.c',
+  'esp32_ledc.c',
+  'esp32_flash_enc.c',
+  'ssi_psram.c'
+))
+
+system_ss.add(when: 'CONFIG_RISCV_ESP32C3', if_true: files(
+  'esp32c3_cache.c',
+  'esp_sha.c',
+  'esp32c3_sha.c',
+  'esp32c3_jtag.c',
+  'esp32c3_rtc_cntl.c',
+  'esp_hmac.c',
+  'esp32c3_hmac.c'
+))
+
+system_ss.add(when: 'CONFIG_RISCV_ESP32C6', if_true: files(
+  'esp32c6_cache.c',
+  'esp32c6_i2c_ana_mst.c',
+  'esp32c6_intpri.c',
+  'esp32c6_jtag.c',
+  'esp32c6_lp.c',
+  'esp32c6_modem.c',
+  'esp32c6_pcr.c',
+  'esp32c6_spi_mem.c',
+  'esp_sha.c',
+  'esp32c3_sha.c',
+  'esp32c6_sha.c',
+))
+
+system_ss.add(when: 'CONFIG_XTENSA_ESP32S3', if_true: files(
+  'esp32s3_cache.c',
+  'ssi_psram.c',
+  'esp_sha.c',
+  'esp32s3_sha.c',
+  'esp32c3_jtag.c',
+  'esp32s3_rtc_cntl.c',
+  'esp32s3_rng.c',
+  'esp32s3_pms.c',
+  'esp_hmac.c',
+  'esp32s3_hmac.c'
+))
+
+if gcrypt.found()
+  system_ss.add(when: [gcrypt, 'CONFIG_XTENSA_ESP32'], if_true: files(
+    'esp32_rsa.c',
+  ))
+  system_ss.add(when: [gcrypt, 'CONFIG_RISCV_ESP32C3'], if_true: files(
+    'esp_aes.c',
+    'esp32c3_aes.c',
+    'esp_rsa.c',
+    'esp32c3_rsa.c',
+    'esp_ds.c',
+    'esp32c3_ds.c',
+    'esp32c3_xts_aes.c'
+  ))
+  system_ss.add(when: [gcrypt, 'CONFIG_XTENSA_ESP32S3'], if_true: files(
+    'esp_aes.c',
+    'esp32s3_aes.c',
+    'esp_rsa.c',
+    'esp32s3_rsa.c',
+    'esp_ds.c',
+    'esp32s3_ds.c',
+    'esp32s3_xts_aes.c'
+  ))
+endif
 
 system_ss.add(when: 'CONFIG_GRLIB', if_true: files('grlib_ahb_apb_pnp.c'))
 
