@@ -48,6 +48,7 @@
 #include "hw/misc/esp32c3_xts_aes.h"
 #include "hw/i2c/esp32_i2c.h"
 #include "hw/i2c/host_i2c.h"
+#include "hw/ssi/esp32c3_gpspi.h"
 #include "hw/misc/unimp.h"
 #include "hw/misc/esp32c3_jtag.h"
 #include "hw/dma/esp32c3_gdma.h"
@@ -87,6 +88,8 @@ struct Esp32C3MachineState {
     ESP32C3DsState ds;
     ESP32C3XtsAesState xts_aes;
     Esp32I2CState i2c;
+    Esp32C3GpSpiState gpspi2;
+    Notifier gpspi2_done;
     ESP32C3TimgState timg[2];
     ESP32C3SysTimerState systimer;
     ESP32C3SpiState spi1;
@@ -199,6 +202,41 @@ static void esp32c3_reset_request(void* opaque, int n, int level)
     }
 }
 
+
+/*
+ * Chip selects for whatever ended up on GP-SPI2.
+ *
+ * A peripheral put there from the command line (`-device <part>,bus=gpspi`)
+ * is created after the machine is built, so this runs once everything exists.
+ * Without it every SSI peripheral sits with its chip select unconnected, which
+ * for an SSI_CS_LOW part reads as permanently selected: bytes still reach it,
+ * but it never sees the edge that ends one command and starts the next, and a
+ * flash answers the second command with the tail of the first.
+ *
+ * One line per peripheral, in the order they were added, so the first is CS0.
+ */
+static void esp32c3_gpspi2_connect_cs(Notifier *notifier, void *data)
+{
+    Esp32C3MachineState *ms = container_of(notifier, Esp32C3MachineState,
+                                           gpspi2_done);
+    DeviceState *master = DEVICE(&ms->gpspi2);
+    BusState *bus = qdev_get_child_bus(master, "gpspi");
+    BusChild *kid;
+    int cs = 0;
+
+    QTAILQ_FOREACH(kid, &bus->children, sibling) {
+        if (cs >= ESP32C3_GPSPI_CS_COUNT) {
+            warn_report("esp32c3: more than %d devices on GP-SPI2; "
+                        "the rest have no chip select",
+                        ESP32C3_GPSPI_CS_COUNT);
+            break;
+        }
+        qdev_connect_gpio_out_named(master, SSI_GPIO_CS, cs,
+                                    qdev_get_gpio_in_named(kid->child,
+                                                           SSI_GPIO_CS, 0));
+        cs++;
+    }
+}
 
 static void esp32c3_init_spi_flash(Esp32C3MachineState *ms, BlockBackend* blk)
 {
@@ -420,6 +458,7 @@ static void esp32c3_machine_init(MachineState *machine)
     object_initialize_child(OBJECT(machine), "intmatrix", &ms->intmatrix, TYPE_ESP32C3_INTMATRIX);
     object_initialize_child(OBJECT(machine), "gpio", &ms->gpio, TYPE_ESP32C3_GPIO);
     object_initialize_child(OBJECT(machine), "i2c", &ms->i2c, TYPE_ESP32C3_I2C);
+    object_initialize_child(OBJECT(machine), "spi2", &ms->gpspi2, TYPE_ESP32C3_GPSPI);
     object_initialize_child(OBJECT(machine), "extmem", &ms->cache, TYPE_ESP32C3_CACHE);
     object_initialize_child(OBJECT(machine), "efuse", &ms->efuse, TYPE_ESP32C3_EFUSE);
     object_initialize_child(OBJECT(machine), "clock", &ms->clock, TYPE_ESP32C3_CLOCK);
@@ -529,6 +568,19 @@ static void esp32c3_machine_init(MachineState *machine)
          * which matches whichever addresses the page says it is modelling.
          * See hw/i2c/host_i2c.c. */
         i2c_slave_create_simple(ms->i2c.bus, TYPE_HOST_I2C, 0);
+    }
+
+    /* GP-SPI2. Not a second esp32c3_spi: that models the SPI *memory*
+     * controller behind spi1, and this is the general-purpose master Zephyr's
+     * spi2 node describes. See hw/ssi/esp32c3_gpspi.c. */
+    {
+        sysbus_realize(SYS_BUS_DEVICE(&ms->gpspi2), &error_fatal);
+        MemoryRegion *mr = sysbus_mmio_get_region(SYS_BUS_DEVICE(&ms->gpspi2), 0);
+        memory_region_add_subregion_overlap(sys_mem, DR_REG_SPI2_BASE, mr, 0);
+        sysbus_connect_irq(SYS_BUS_DEVICE(&ms->gpspi2), 0,
+                           qdev_get_gpio_in(intmatrix_dev, ETS_SPI2_INTR_SOURCE));
+        ms->gpspi2_done.notify = esp32c3_gpspi2_connect_cs;
+        qemu_add_machine_init_done_notifier(&ms->gpspi2_done);
     }
 
     /* (Extmem) Cache realization */
