@@ -50,6 +50,8 @@
 #include "hw/i2c/host_i2c.h"
 #include "hw/ssi/esp32c3_gpspi.h"
 #include "hw/ssi/host_spi.h"
+#include "net/can_browser.h"
+#include "qapi/visitor.h"
 #include "hw/misc/unimp.h"
 #include "hw/misc/esp32c3_jtag.h"
 #include "hw/dma/esp32c3_gdma.h"
@@ -91,6 +93,8 @@ struct Esp32C3MachineState {
     Esp32I2CState i2c;
     Esp32C3GpSpiState gpspi2;
     Notifier gpspi2_done;
+    /* How many GP-SPI2 chip selects the browser bridge claims. */
+    uint8_t host_spi_cs;
     ESP32C3TimgState timg[2];
     ESP32C3SysTimerState systimer;
     ESP32C3SpiState spi1;
@@ -580,11 +584,20 @@ static void esp32c3_machine_init(MachineState *machine)
         sysbus_connect_irq(SYS_BUS_DEVICE(&ms->gpspi2), 0,
                            qdev_get_gpio_in(intmatrix_dev, ETS_SPI2_INTR_SOURCE));
 
-        /* Whatever the browser has soldered to CS0 answers through this one
-         * peripheral, the SPI counterpart of the I2C slave above. See
-         * hw/ssi/host_spi.c. It takes CS0, which is where every chip the
-         * page models sits; another line needs another instance. */
-        ssi_create_peripheral(ms->gpspi2.spi, TYPE_HOST_SPI);
+        /* Whatever the browser has soldered to the bus answers through these,
+         * the SPI counterpart of the I2C slave above (hw/ssi/host_spi.c). One
+         * per chip select, because an SSI peripheral *is* one chip select, and
+         * the page can attach a part to any of them. Six is the controller's
+         * own ceiling, so nothing is left unreachable that hardware could
+         * reach; `-machine esp32c3,host-spi-cs=0` frees the bus for a QEMU
+         * device instead, which is how the controller is tested without a
+         * browser. */
+        for (int cs = 0; cs < ms->host_spi_cs; cs++) {
+            DeviceState *dev = qdev_new(TYPE_HOST_SPI);
+
+            qdev_prop_set_uint8(dev, "cs", cs);
+            qdev_realize_and_unref(dev, BUS(ms->gpspi2.spi), &error_fatal);
+        }
 
         ms->gpspi2_done.notify = esp32c3_gpspi2_connect_cs;
         qemu_add_machine_init_done_notifier(&ms->gpspi2_done);
@@ -760,7 +773,20 @@ static void esp32c3_machine_init(MachineState *machine)
         memory_region_add_subregion_overlap(sys_mem, esp32c3_memmap[ESP32C3_MEMREGION_FRAMEBUF].base, &ms->rgb.vram, 0);
     }
 
-    /* TWAI peripheral realization */
+    /* TWAI peripheral realization. The TWAI is a real SJA1000 underneath and
+     * only carries traffic when it is linked to a bus, which nothing was
+     * doing. Give it one before realize (the link is read there), and put the
+     * page's CAN model on the other end (net/can/can_browser.c), so the
+     * guest's own controller reaches the simulated nodes rather than needing
+     * an MCP2515 on SPI to stand in for it. */
+    {
+        Object *canbus = object_new(TYPE_CAN_BUS);
+
+        object_property_add_child(OBJECT(ms), "canbus", canbus);
+        object_property_set_link(OBJECT(&ms->twai), "canbus", canbus,
+                                 &error_fatal);
+        can_browser_connect(CAN_BUS(canbus), &error_fatal);
+    }
     sysbus_realize(SYS_BUS_DEVICE(&ms->twai), &error_fatal);
     MemoryRegion *twai_mr = sysbus_mmio_get_region(SYS_BUS_DEVICE(&ms->twai), 0);
     memory_region_add_subregion_overlap(sys_mem, DR_REG_TWAI_BASE, twai_mr, 0);
@@ -770,9 +796,46 @@ static void esp32c3_machine_init(MachineState *machine)
 
 
 /* Initialize machine type */
+static void esp32c3_get_host_spi_cs(Object *obj, Visitor *v, const char *name,
+                                    void *opaque, Error **errp)
+{
+    uint8_t value = ESP32C3_MACHINE(obj)->host_spi_cs;
+
+    visit_type_uint8(v, name, &value, errp);
+}
+
+static void esp32c3_set_host_spi_cs(Object *obj, Visitor *v, const char *name,
+                                    void *opaque, Error **errp)
+{
+    Esp32C3MachineState *ms = ESP32C3_MACHINE(obj);
+    uint8_t value;
+
+    if (!visit_type_uint8(v, name, &value, errp)) {
+        return;
+    }
+    if (value > ESP32C3_GPSPI_CS_COUNT) {
+        error_setg(errp, "host-spi-cs must be at most %d",
+                   ESP32C3_GPSPI_CS_COUNT);
+        return;
+    }
+    ms->host_spi_cs = value;
+}
+
+static void esp32c3_machine_instance_init(Object *obj)
+{
+    ESP32C3_MACHINE(obj)->host_spi_cs = ESP32C3_GPSPI_CS_COUNT;
+}
+
 static void esp32c3_machine_class_init(ObjectClass *oc, const void *data)
 {
     MachineClass *mc = MACHINE_CLASS(oc);
+
+    object_class_property_add(oc, "host-spi-cs", "uint8",
+                              esp32c3_get_host_spi_cs,
+                              esp32c3_set_host_spi_cs, NULL, NULL);
+    object_class_property_set_description(oc, "host-spi-cs",
+        "GP-SPI2 chip selects the browser bridge claims (0 leaves the bus free)");
+
     mc->desc = "Espressif ESP32-C3 machine";
     mc->default_cpu_type = TYPE_ESP_RISCV_CPU;
     mc->init = esp32c3_machine_init;
@@ -789,6 +852,7 @@ static const TypeInfo esp32c3_info = {
     .parent = TYPE_MACHINE,
     /* Real size in bytes of our machine instance */
     .instance_size = sizeof(Esp32C3MachineState),
+    .instance_init = esp32c3_machine_instance_init,
     /* Override the init function to one we defined above */
     .class_init = esp32c3_machine_class_init,
 };
