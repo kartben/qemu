@@ -47,10 +47,12 @@
 #endif
 
 /*
- * Enough for any message this can see: the ESP32 command register carries an
- * 8-bit byte count, and its FIFO is 32 bytes deep.
+ * Enough for a whole message. A read run cannot exceed 255 bytes (the command
+ * register's byte count is 8 bits), but a write is only chunked into the
+ * 32-byte FIFO *inside* one transfer, so a display pushing a full 128x64 frame
+ * arrives here as one 1025-byte message.
  */
-#define HOST_I2C_BUF 256
+#define HOST_I2C_BUF 4096
 
 /* How long to wait for the page before giving up on a transfer and NAKing. */
 #define HOST_I2C_TIMEOUT_MS 250
