@@ -368,10 +368,19 @@ static void esp32c3_machine_init(MachineState *machine)
 
     /* Initialize DRAM as an alias to IRAM (not including Internal SRAM 0) */
     MemoryRegion *dram = g_new(MemoryRegion, 1);
+    /* IO MUX. The guest configures pad function, input enable and pull-ups
+     * here with read-modify-write cycles, and nothing in the machine reads
+     * it back, so a plain RAM window is enough to keep those coherent.
+     * create_unimplemented_device() would read back 0 and silently drop
+     * bits set by an earlier call. */
+    MemoryRegion *iomux = g_new(MemoryRegion, 1);
     /* DRAM mirrors IRAM for SRAM 1, skip the SRAM 0 area */
     memory_region_init_alias(dram, NULL, "esp32c3.dram", iram,
                              ESP32C3_INTERNAL_SRAM0_SIZE, memmap[ESP32C3_MEMREGION_DRAM].size);
     memory_region_add_subregion(sys_mem, memmap[ESP32C3_MEMREGION_DRAM].base, dram);
+
+    memory_region_init_ram(iomux, NULL, "esp32c3.iomux", 0x1000, &error_fatal);
+    memory_region_add_subregion(sys_mem, DR_REG_IO_MUX_BASE, iomux);
 
     /* Initialize RTC Fast Memory as regular RAM */
     MemoryRegion *rtcram = g_new(MemoryRegion, 1);

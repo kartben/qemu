@@ -30,6 +30,13 @@ static void esp32c3_gpio_init(Object *obj)
  * in this class_init function */
 static void esp32c3_gpio_class_init(ObjectClass *klass, const void *data)
 {
+    Esp32GpioClass *gc = ESP32_GPIO_CLASS(klass);
+
+    /* The low bank sits where it does on the ESP32, but the per-pin block and
+     * the CPU interrupt register do not. 22 pads, GPIO0..GPIO21. */
+    gc->pin_reg_base = 0x74;
+    gc->pcpu_int_reg = 0x5c;
+    gc->ngpios = 22;
 }
 
 static const TypeInfo esp32c3_gpio_info = {
