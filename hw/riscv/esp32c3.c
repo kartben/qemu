@@ -47,6 +47,7 @@
 #include "hw/misc/esp32c3_ds.h"
 #include "hw/misc/esp32c3_xts_aes.h"
 #include "hw/i2c/esp32_i2c.h"
+#include "hw/i2c/host_i2c.h"
 #include "hw/misc/unimp.h"
 #include "hw/misc/esp32c3_jtag.h"
 #include "hw/dma/esp32c3_gdma.h"
@@ -523,6 +524,11 @@ static void esp32c3_machine_init(MachineState *machine)
         memory_region_add_subregion_overlap(sys_mem, DR_REG_I2C_EXT_BASE, mr, 0);
         sysbus_connect_irq(SYS_BUS_DEVICE(&ms->i2c), 0,
                            qdev_get_gpio_in(intmatrix_dev, ETS_I2C_EXT0_INTR_SOURCE));
+
+        /* Everything the browser has on the bus answers through one slave,
+         * which matches whichever addresses the page says it is modelling.
+         * See hw/i2c/host_i2c.c. */
+        i2c_slave_create_simple(ms->i2c.bus, TYPE_HOST_I2C, 0);
     }
 
     /* (Extmem) Cache realization */

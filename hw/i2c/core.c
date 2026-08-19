@@ -290,6 +290,21 @@ int i2c_send_async(I2CBus *bus, uint8_t data)
     return 0;
 }
 
+void i2c_announce_recv(I2CBus *bus, unsigned int len)
+{
+    I2CSlaveClass *sc;
+    I2CSlave *s;
+
+    if (QLIST_EMPTY(&bus->current_devs) || bus->broadcast) {
+        return;
+    }
+    s = QLIST_FIRST(&bus->current_devs)->elt;
+    sc = I2C_SLAVE_GET_CLASS(s);
+    if (sc->announce_recv) {
+        sc->announce_recv(s, len);
+    }
+}
+
 uint8_t i2c_recv(I2CBus *bus)
 {
     uint8_t data = 0xff;

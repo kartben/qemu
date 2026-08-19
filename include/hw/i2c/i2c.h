@@ -54,6 +54,14 @@ struct I2CSlaveClass {
      */
     bool (*match_and_add)(I2CSlave *candidate, uint8_t address, bool broadcast,
                           I2CNodeList *current_devs);
+
+    /*
+     * Optional. The master is about to call recv() @len times in a row
+     * without releasing the bus. A slave that answers out of a buffer it has
+     * to fetch from somewhere can fetch the whole run in one go here; one
+     * that does not implement this simply sees the recv() calls.
+     */
+    void (*announce_recv)(I2CSlave *s, unsigned int len);
 };
 
 struct I2CSlave {
@@ -151,6 +159,18 @@ void i2c_bus_release(I2CBus *bus);
 int i2c_send(I2CBus *bus, uint8_t data);
 int i2c_send_async(I2CBus *bus, uint8_t data);
 uint8_t i2c_recv(I2CBus *bus);
+
+/**
+ * i2c_announce_recv: tell the addressed slave how long the coming read run is.
+ *
+ * @bus: #I2CBus the transfer is open on
+ * @len: number of i2c_recv() calls about to be made back to back
+ *
+ * Optional: a controller that knows its transfer length up front can call
+ * this, and a slave that cares (see I2CSlaveClass::announce_recv) gets to
+ * answer the run as a unit rather than a byte at a time. A no-op otherwise.
+ */
+void i2c_announce_recv(I2CBus *bus, unsigned int len);
 bool i2c_scan_bus(I2CBus *bus, uint8_t address, bool broadcast,
                   I2CNodeList *current_devs);
 

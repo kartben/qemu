@@ -219,6 +219,11 @@ static void esp32_i2c_do_transaction(Esp32I2CState * s)
             }
             case I2C_OPCODE_READ: {
                 size_t length = FIELD_EX32(cmd, I2C_CMD, BYTE_NUM);
+                /* The driver splits a read of N bytes into N-1 and 1 so it can
+                 * NAK the last one, so a run is not a whole message. Say how
+                 * long this one is before pulling it: a slave that fetches its
+                 * bytes from somewhere else answers the run in one go. */
+                i2c_announce_recv(s->bus, length);
                 for (size_t nbytes = 0; nbytes < length; ++nbytes) {
                     if (fifo8_num_free(&s->rx_fifo) == 0) {
                         error_report("esp32_i2c: RX FIFO overflow");
