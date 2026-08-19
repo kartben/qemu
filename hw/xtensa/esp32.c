@@ -34,9 +34,12 @@
 #include "system/runstate.h"
 #include "system/blockdev.h"
 #include "system/block-backend.h"
-#include "exec/exec-all.h"
+#include "exec/translation-block.h"
+#include "exec/target_page.h"
+#include "exec/cputlb.h"
 #include "net/net.h"
 #include "elf.h"
+#include "exec/watchpoint.h"
 
 #define TYPE_ESP32_SOC "xtensa.esp32"
 #define ESP32_SOC(obj) OBJECT_CHECK(Esp32SocState, (obj), TYPE_ESP32_SOC)
@@ -654,15 +657,12 @@ static void esp32_soc_init(Object *obj)
     qdev_init_gpio_in_named(DEVICE(s), esp32_timg_sys_reset, ESP32_TIMG_WDT_SYS_RESET_GPIO, 2);
 }
 
-static const Property esp32_soc_properties[] = {
-};
 
 static void esp32_soc_class_init(ObjectClass *klass, const void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(klass);
 
     dc->realize = esp32_soc_realize;
-    device_class_set_props(dc, esp32_soc_properties);
 }
 
 static const TypeInfo esp32_soc_info = {

@@ -244,7 +244,7 @@ static void dwc_sdmmc_handle_cmd(DWCSDMMCState *s)
     request.cmd = hw_cmd.cmd_index;
     request.arg = s->cmdarg;
 
-    rlen = sdbus_do_command(&s->sdbus, &request, resp);
+    rlen = sdbus_do_command(&s->sdbus, &request, resp, sizeof(resp));
     s->rintsts |= SDMMC_INTMASK_CMD_DONE;
     if (rlen < 0) {
         DEBUG("%s: error: rlen=%d\n", __func__, rlen);
@@ -533,8 +533,6 @@ static const MemoryRegionOps dwc_sdmmc_ops = {
 
 
 
-static const Property dwc_sdmmc_properties[] = {
-};
 
 static void dwc_sdmmc_init(Object *obj)
 {
@@ -572,7 +570,6 @@ static void dwc_sdmmc_class_init(ObjectClass *klass, const void *data)
     DeviceClass *dc = DEVICE_CLASS(klass);
 
     dc->legacy_reset = dwc_sdmmc_reset;
-    device_class_set_props(dc, dwc_sdmmc_properties);
 }
 
 static TypeInfo dwc_sdmmc_info = {

@@ -215,8 +215,6 @@ static void esp32_frc_timer_init(Object *obj)
     s->has_alarm = true;
 }
 
-static const Property esp32_frc_timer_properties[] = {
-};
 
 static void esp32_frc_timer_class_init(ObjectClass *klass, const void *data)
 {
@@ -225,7 +223,6 @@ static void esp32_frc_timer_class_init(ObjectClass *klass, const void *data)
 
     rc->phases.hold = esp32_frc_timer_reset_hold;
     dc->realize = esp32_frc_timer_realize;
-    device_class_set_props(dc, esp32_frc_timer_properties);
 }
 
 static const TypeInfo esp32_frc_timer_info = {

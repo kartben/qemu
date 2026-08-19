@@ -336,8 +336,6 @@ static void esp32_spi_init(Object *obj)
     qdev_init_gpio_out_named(DEVICE(s), &s->cs_gpio[0], SSI_GPIO_CS, ESP32_SPI_CS_COUNT);
 }
 
-static const Property esp32_spi_properties[] = {
-};
 
 static void esp32_spi_class_init(ObjectClass *klass, const void *data)
 {
@@ -346,7 +344,6 @@ static void esp32_spi_class_init(ObjectClass *klass, const void *data)
 
     rc->phases.hold = esp32_spi_reset_hold;
     dc->realize = esp32_spi_realize;
-    device_class_set_props(dc, esp32_spi_properties);
 }
 
 static const TypeInfo esp32_spi_info = {

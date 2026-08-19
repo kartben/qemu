@@ -215,8 +215,6 @@ static void esp32s3_rtc_cntl_init(Object *obj)
     esp32s3_rtc_update_clk(s);
 }
 
-static const Property esp32s3_rtc_cntl_properties[] = {
-};
 
 static void esp32s3_rtc_cntl_class_init(ObjectClass *klass, const void *data)
 {
@@ -225,7 +223,6 @@ static void esp32s3_rtc_cntl_class_init(ObjectClass *klass, const void *data)
 
     rc->phases.hold = esp32s3_rtc_cntl_reset_hold;
     dc->realize = esp32s3_rtc_cntl_realize;
-    device_class_set_props(dc, esp32s3_rtc_cntl_properties);
 }
 
 static const TypeInfo esp32s3_rtc_cntl_info = {
