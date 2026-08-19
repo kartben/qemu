@@ -22,46 +22,76 @@
 #define SHA_WARNING 0
 #define SHA_DEBUG 0
 
+/* sha224_compress(), sha256_compress() and sha512_compress() return int, while
+ * hash_compress is void (*)(void *, const uint8_t *). Casting a function pointer
+ * across that difference and calling through it is undefined behaviour: native
+ * targets happen to tolerate it, but WebAssembly type-checks every
+ * call_indirect and traps with "function signature mismatch" the moment the
+ * guest computes a SHA-256 — which the ESP32 boot ROMs do to verify the image
+ * they just loaded. Route them through correctly typed wrappers instead.
+ *
+ * sha1_compress() already returns void, and every *_init() matches hash_init,
+ * so only the compress side needs this. */
+static void esp_sha1_compress_fn(void *ctx, const uint8_t *buf)
+{
+    sha1_compress(ctx, buf);
+}
+
+static void esp_sha224_compress_fn(void *ctx, const uint8_t *buf)
+{
+    sha224_compress(ctx, (unsigned char *) buf);
+}
+
+static void esp_sha256_compress_fn(void *ctx, const uint8_t *buf)
+{
+    sha256_compress(ctx, (unsigned char *) buf);
+}
+
+static void esp_sha512_compress_fn(void *ctx, const uint8_t *buf)
+{
+    sha512_compress(ctx, (unsigned char *) buf);
+}
+
 static ESPHashAlg esp_sha_algs[] = {
     [ESP_SHA_1_MODE]    = {
         .init     = (hash_init) sha1_init,
-        .compress = (hash_compress) sha1_compress,
+        .compress = esp_sha1_compress_fn,
         .len      = sizeof(struct sha1_state)
     },
     [ESP_SHA_224_MODE]  = {
         .init     = (hash_init) sha224_init,
-        .compress = (hash_compress) sha224_compress,
+        .compress = esp_sha224_compress_fn,
         .len      = SHA224_HASH_SIZE
     },
     [ESP_SHA_256_MODE]  = {
         .init     = (hash_init) sha256_init,
-        .compress = (hash_compress) sha256_compress,
+        .compress = esp_sha256_compress_fn,
         .len      = sizeof(struct sha256_state)
     },
     [ESP_SHA_384_MODE]  = {
         .init     = (hash_init) sha384_init,
-        .compress = (hash_compress) sha512_compress,
+        .compress = esp_sha512_compress_fn,
         .len      = SHA384_HASH_SIZE
     },
     [ESP_SHA_512_MODE]  = {
         .init     = (hash_init) sha512_init,
-        .compress = (hash_compress) sha512_compress,
+        .compress = esp_sha512_compress_fn,
         .len      = sizeof(struct sha512_state)
     },
     [ESP_SHA_512_224_MODE]  = {
         .init     = (hash_init) sha512_224_init,
-        .compress = (hash_compress) sha512_compress,
+        .compress = esp_sha512_compress_fn,
         .len      = sizeof(struct sha512_state)
     },
     [ESP_SHA_512_256_MODE]  = {
         .init     = (hash_init) sha512_256_init,
-        .compress = (hash_compress) sha512_compress,
+        .compress = esp_sha512_compress_fn,
         .len      = sizeof(struct sha512_state)
     },
     [ESP_SHA_512_t_MODE]  = {
         .init         = (hash_init) sha512_t_init,
         .init_message = (hash_init_message) sha512_t_init_message,
-        .compress     = (hash_compress) sha512_compress,
+        .compress     = esp_sha512_compress_fn,
         .len          = sizeof(struct sha512_state)
     },
 };
