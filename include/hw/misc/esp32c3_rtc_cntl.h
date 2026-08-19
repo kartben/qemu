@@ -2,6 +2,7 @@
 
 #include "hw/hw.h"
 #include "hw/sysbus.h"
+#include "qemu/timer.h"
 #include "hw/registerfields.h"
 
 #define TYPE_ESP32C3_RTC_CNTL "misc.esp32c3.rtc_cntl"
@@ -50,6 +51,21 @@ typedef struct ESP32C3RtcCntlState {
 
     uint32_t options0;
     uint32_t scratch_reg[ESP32C3_RTC_CNTL_SCRATCH_REG_COUNT];
+
+    /* Sleep and the RTC slow-clock counter that wakes it. */
+    uint32_t slp_timer0;
+    uint32_t slp_timer1;
+    uint32_t time_low;
+    uint32_t time_high;
+    uint32_t state0;
+    uint32_t wakeup_state;
+    uint32_t int_raw;
+    uint32_t int_ena;
+    uint32_t dig_pwc;
+    uint32_t slp_wakeup_cause;
+    QEMUTimer *sleep_timer;
+    /* Set while the timer armed by a deep sleep is pending. */
+    bool sleep_is_deep;
 
     ESP32C3ResetReason reason;
     /* IRQ used to notify the machine that we need a reset */
