@@ -46,6 +46,7 @@
 #include "hw/misc/esp32c3_hmac.h"
 #include "hw/misc/esp32c3_ds.h"
 #include "hw/misc/esp32c3_xts_aes.h"
+#include "hw/misc/unimp.h"
 #include "hw/misc/esp32c3_jtag.h"
 #include "hw/dma/esp32c3_gdma.h"
 #include "hw/display/esp_rgb.h"
@@ -410,11 +411,17 @@ static void esp32c3_machine_init(MachineState *machine)
     object_initialize_child(OBJECT(machine), "efuse", &ms->efuse, TYPE_ESP32C3_EFUSE);
     object_initialize_child(OBJECT(machine), "clock", &ms->clock, TYPE_ESP32C3_CLOCK);
     object_initialize_child(OBJECT(machine), "sha", &ms->sha, TYPE_ESP32C3_SHA);
+#ifdef CONFIG_GCRYPT
     object_initialize_child(OBJECT(machine), "aes", &ms->aes, TYPE_ESP32C3_AES);
+#endif
     object_initialize_child(OBJECT(machine), "gdma", &ms->gdma, TYPE_ESP32C3_GDMA);
+#ifdef CONFIG_GCRYPT
     object_initialize_child(OBJECT(machine), "rsa", &ms->rsa, TYPE_ESP32C3_RSA);
+#endif
     object_initialize_child(OBJECT(machine), "hmac", &ms->hmac, TYPE_ESP32C3_HMAC);
+#ifdef CONFIG_GCRYPT
     object_initialize_child(OBJECT(machine), "ds", &ms->ds, TYPE_ESP32C3_DS);
+#endif
     object_initialize_child(OBJECT(machine), "xts_aes", &ms->xts_aes, TYPE_ESP32C3_XTS_AES);
     object_initialize_child(OBJECT(machine), "timg0", &ms->timg[0], TYPE_ESP32C3_TIMG);
     object_initialize_child(OBJECT(machine), "timg1", &ms->timg[1], TYPE_ESP32C3_TIMG);
@@ -593,6 +600,7 @@ static void esp32c3_machine_init(MachineState *machine)
                            qdev_get_gpio_in(intmatrix_dev, ETS_SHA_INTR_SOURCE));
     }
 
+#ifdef CONFIG_GCRYPT
     /* AES realization */
     {
         ms->aes.parent.gdma = ESP_GDMA(&ms->gdma);
@@ -602,7 +610,11 @@ static void esp32c3_machine_init(MachineState *machine)
         sysbus_connect_irq(SYS_BUS_DEVICE(&ms->aes), 0,
                            qdev_get_gpio_in(intmatrix_dev, ETS_AES_INTR_SOURCE));
     }
+#else
+    create_unimplemented_device("esp32c3.aes", DR_REG_AES_BASE, 0x1000);
+#endif
 
+#ifdef CONFIG_GCRYPT
     /* RSA realization */
     {
         sysbus_realize(SYS_BUS_DEVICE(&ms->rsa), &error_fatal);
@@ -611,6 +623,9 @@ static void esp32c3_machine_init(MachineState *machine)
         sysbus_connect_irq(SYS_BUS_DEVICE(&ms->rsa), 0,
                            qdev_get_gpio_in(intmatrix_dev, ETS_RSA_INTR_SOURCE));
     }
+#else
+    create_unimplemented_device("esp32c3.rsa", DR_REG_RSA_BASE, 0x1000);
+#endif
 
     /* HMAC realization */
     {
@@ -620,6 +635,7 @@ static void esp32c3_machine_init(MachineState *machine)
         memory_region_add_subregion_overlap(sys_mem, DR_REG_HMAC_BASE, mr, 0);
     }
 
+#ifdef CONFIG_GCRYPT
     /* Digital Signature realization */
     {
         ms->ds.parent.hmac = ESP_HMAC(&ms->hmac);
@@ -630,6 +646,9 @@ static void esp32c3_machine_init(MachineState *machine)
         MemoryRegion *mr = sysbus_mmio_get_region(SYS_BUS_DEVICE(&ms->ds), 0);
         memory_region_add_subregion_overlap(sys_mem, DR_REG_DIGITAL_SIGNATURE_BASE, mr, 0);
     }
+#else
+    create_unimplemented_device("esp32c3.ds", DR_REG_DIGITAL_SIGNATURE_BASE, 0x1000);
+#endif
 
     /* XTS-AES realization */
     {
