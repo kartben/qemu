@@ -177,7 +177,15 @@ static void esp32_i2c_do_transaction(Esp32I2CState * s)
     bool stop_or_end = false;
     for (int i_cmd = 0; i_cmd < ESP32_I2C_CMD_COUNT && !stop_or_end; ++i_cmd) {
         uint32_t cmd = s->cmd_reg[i_cmd];
-        char opcode = FIELD_EX32(cmd, I2C_CMD, OPCODE);
+        Esp32I2CClass *class = ESP32_I2C_GET_CLASS(s);
+        uint8_t raw = FIELD_EX32(cmd, I2C_CMD, OPCODE);
+        /* Normalise to the ESP32 numbering the switch below is written in. */
+        char opcode =
+            raw == class->op_rstart ? I2C_OPCODE_RSTART :
+            raw == class->op_write  ? I2C_OPCODE_WRITE  :
+            raw == class->op_read   ? I2C_OPCODE_READ   :
+            raw == class->op_stop   ? I2C_OPCODE_STOP   :
+            raw == class->op_end    ? I2C_OPCODE_END    : 0xff;
         switch (opcode) {
             case I2C_OPCODE_RSTART:
                 i2c_end_transfer(s->bus);
@@ -263,9 +271,38 @@ static void esp32_i2c_init(Object * obj)
 
 static void esp32_i2c_class_init(ObjectClass * klass, const void * data)
 {
+    Esp32I2CClass *ic = ESP32_I2C_CLASS(klass);
+
+    /* ESP32 numbering; the RISC-V parts override it below. */
+    ic->op_rstart = 0;
+    ic->op_write  = 1;
+    ic->op_read   = 2;
+    ic->op_stop   = 3;
+    ic->op_end    = 4;
+
     ResettableClass *rc = RESETTABLE_CLASS(klass);
     rc->phases.hold = esp32_i2c_reset_hold;
 }
+
+static void esp32c3_i2c_class_init(ObjectClass *klass, const void *data)
+{
+    Esp32I2CClass *ic = ESP32_I2C_CLASS(klass);
+
+    /* RSTART, READ and STOP are renumbered on the RISC-V parts. */
+    ic->op_rstart = 6;
+    ic->op_write  = 1;
+    ic->op_read   = 3;
+    ic->op_stop   = 2;
+    ic->op_end    = 4;
+}
+
+static const TypeInfo esp32c3_i2c_type_info = {
+    .name = TYPE_ESP32C3_I2C,
+    .parent = TYPE_ESP32_I2C,
+    .instance_size = sizeof(Esp32I2CState),
+    .class_init = esp32c3_i2c_class_init,
+    .class_size = sizeof(Esp32I2CClass),
+};
 
 static const TypeInfo esp32_i2c_type_info = {
     .name = TYPE_ESP32_I2C,
@@ -273,11 +310,13 @@ static const TypeInfo esp32_i2c_type_info = {
     .instance_size = sizeof(Esp32I2CState),
     .instance_init = esp32_i2c_init,
     .class_init = esp32_i2c_class_init,
+    .class_size = sizeof(Esp32I2CClass),
 };
 
 static void esp32_i2c_register_types(void)
 {
     type_register_static(&esp32_i2c_type_info);
+    type_register_static(&esp32c3_i2c_type_info);
 }
 
 type_init(esp32_i2c_register_types)

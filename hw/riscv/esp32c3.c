@@ -46,6 +46,7 @@
 #include "hw/misc/esp32c3_hmac.h"
 #include "hw/misc/esp32c3_ds.h"
 #include "hw/misc/esp32c3_xts_aes.h"
+#include "hw/i2c/esp32_i2c.h"
 #include "hw/misc/unimp.h"
 #include "hw/misc/esp32c3_jtag.h"
 #include "hw/dma/esp32c3_gdma.h"
@@ -84,6 +85,7 @@ struct Esp32C3MachineState {
     ESP32C3HmacState hmac;
     ESP32C3DsState ds;
     ESP32C3XtsAesState xts_aes;
+    Esp32I2CState i2c;
     ESP32C3TimgState timg[2];
     ESP32C3SysTimerState systimer;
     ESP32C3SpiState spi1;
@@ -416,6 +418,7 @@ static void esp32c3_machine_init(MachineState *machine)
 
     object_initialize_child(OBJECT(machine), "intmatrix", &ms->intmatrix, TYPE_ESP32C3_INTMATRIX);
     object_initialize_child(OBJECT(machine), "gpio", &ms->gpio, TYPE_ESP32C3_GPIO);
+    object_initialize_child(OBJECT(machine), "i2c", &ms->i2c, TYPE_ESP32C3_I2C);
     object_initialize_child(OBJECT(machine), "extmem", &ms->cache, TYPE_ESP32C3_CACHE);
     object_initialize_child(OBJECT(machine), "efuse", &ms->efuse, TYPE_ESP32C3_EFUSE);
     object_initialize_child(OBJECT(machine), "clock", &ms->clock, TYPE_ESP32C3_CLOCK);
@@ -510,6 +513,16 @@ static void esp32c3_machine_init(MachineState *machine)
          * waiting on a pin edge never wakes. */
         sysbus_connect_irq(SYS_BUS_DEVICE(&ms->gpio), 0,
                            qdev_get_gpio_in(intmatrix_dev, ETS_GPIO_INTR_SOURCE));
+    }
+
+    /* I2C0. The controller's register map is the same as the ESP32's, so the
+     * existing model serves both; only the base address and interrupt differ. */
+    {
+        sysbus_realize(SYS_BUS_DEVICE(&ms->i2c), &error_fatal);
+        MemoryRegion *mr = sysbus_mmio_get_region(SYS_BUS_DEVICE(&ms->i2c), 0);
+        memory_region_add_subregion_overlap(sys_mem, DR_REG_I2C_EXT_BASE, mr, 0);
+        sysbus_connect_irq(SYS_BUS_DEVICE(&ms->i2c), 0,
+                           qdev_get_gpio_in(intmatrix_dev, ETS_I2C_EXT0_INTR_SOURCE));
     }
 
     /* (Extmem) Cache realization */

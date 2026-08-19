@@ -97,7 +97,11 @@ REG32(I2C_CMD, 0x58);
     FIELD(I2C_CMD, DONE, 31, 1);
 /* 15 more command registers omitted */
 
-/* I2C_CMD.OPCODE values */
+/*
+ * I2C_CMD.OPCODE values. The ESP32 and the RISC-V parts number these
+ * differently: RSTART, READ and STOP all moved, so the model reads them from
+ * its class rather than from a fixed enum. WRITE and END happen to agree.
+ */
 typedef enum {
     I2C_OPCODE_RSTART = 0,
     I2C_OPCODE_WRITE  = 1,
@@ -105,5 +109,22 @@ typedef enum {
     I2C_OPCODE_STOP   = 3,
     I2C_OPCODE_END    = 4,
 } i2c_opcode_t;
+
+#define TYPE_ESP32C3_I2C "esp32c3.i2c"
+
+typedef struct Esp32I2CClass {
+    SysBusDeviceClass parent_class;
+
+    uint8_t op_rstart;
+    uint8_t op_write;
+    uint8_t op_read;
+    uint8_t op_stop;
+    uint8_t op_end;
+} Esp32I2CClass;
+
+#define ESP32_I2C_GET_CLASS(obj) \
+    OBJECT_GET_CLASS(Esp32I2CClass, obj, TYPE_ESP32_I2C)
+#define ESP32_I2C_CLASS(klass) \
+    OBJECT_CLASS_CHECK(Esp32I2CClass, klass, TYPE_ESP32_I2C)
 
 #endif /* ESP32_I2C_H */
