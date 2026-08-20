@@ -62,6 +62,12 @@ typedef struct Esp32GpioState {
     uint32_t status;
     /* Per-pin GPIO_PINn_REG, only the interrupt fields of which are acted on. */
     uint32_t pin[ESP32_GPIO_PIN_COUNT];
+
+    /* Browser bridge: the page writes `bridge_inputs` from a thread that holds
+     * no lock, and `bridge_timer` applies it here, where the BQL is held. See
+     * qemu_host_gpio_set_inputs() in hw/gpio/esp32_gpio.c. */
+    uint32_t bridge_inputs;
+    QEMUTimer *bridge_timer;
 } Esp32GpioState;
 
 typedef struct Esp32GpioClass {

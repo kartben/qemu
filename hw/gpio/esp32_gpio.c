@@ -18,7 +18,7 @@
 #include "hw/irq.h"
 #include "hw/qdev-properties.h"
 #include "hw/gpio/esp32_gpio.h"
-#include "qemu/main-loop.h"
+#include "qemu/timer.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -241,20 +241,19 @@ void qemu_host_gpio_set_inputs(uint32_t value)
     if (s == NULL) {
         return;
     }
-    /* Called from the page, which is not a vCPU thread and holds no lock. A
-     * pin change can raise the controller's interrupt, and delivering one ends
-     * up in cpu_interrupt(), which asserts bql_locked(). Take the lock for the
-     * whole update so the guest also sees every pin move at once.
+    /* Record only. Applying the value here would mean touching device state,
+     * and possibly raising an interrupt, from the browser's main thread: not a
+     * vCPU thread, holding no lock, while cpu_interrupt() asserts bql_locked().
      *
-     * Only the ESP32 tripped this in practice, because its interrupt matrix
-     * routes per-CPU and kicks the vCPU directly; the C3 survived a press
-     * without it. The requirement is the same on both, so the lock belongs
-     * here rather than in either machine. */
-    bql_lock();
-    for (unsigned i = 0; i < ESP32_GPIO_PIN_COUNT; i++) {
-        esp32_gpio_set_input(s, i, (value & BIT(i)) != 0);
-    }
-    bql_unlock();
+     * Taking the BQL here instead is worse than it looks. The page calls this
+     * once at attach, which is while QEMU is still bringing the machine up and
+     * holding the lock across most of it, so the browser thread blocks inside
+     * startup and the boot never finishes.
+     *
+     * So this is the same shape as net/can/can_browser.c: the page writes a
+     * value, and a QEMU_CLOCK_VIRTUAL timer picks it up on the other side,
+     * where the BQL is already held. */
+    qatomic_set(&s->bridge_inputs, value);
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -262,6 +261,33 @@ uint32_t qemu_host_gpio_get_outputs(void)
 {
     Esp32GpioState *s = esp32_gpio_bridge;
     return s == NULL ? 0 : (s->out & s->enable);
+}
+#endif
+
+/*
+ * Apply whatever the page last wrote. Runs from a timer, so the BQL is held and
+ * an edge may safely raise the controller's interrupt.
+ *
+ * Level-triggered rather than edge-queued on purpose: the page publishes the
+ * whole input word, so the newest value is the truth and a missed intermediate
+ * state is a state the pins were never in for a full sample anyway.
+ */
+#ifdef __EMSCRIPTEN__
+#define ESP32_GPIO_BRIDGE_POLL_MS 5
+
+static void esp32_gpio_bridge_poll(void *opaque)
+{
+    Esp32GpioState *s = ESP32_GPIO(opaque);
+    uint32_t value = qatomic_read(&s->bridge_inputs);
+
+    if (value != s->in) {
+        for (unsigned i = 0; i < ESP32_GPIO_PIN_COUNT; i++) {
+            esp32_gpio_set_input(s, i, (value & BIT(i)) != 0);
+        }
+    }
+
+    timer_mod(s->bridge_timer, qemu_clock_get_ms(QEMU_CLOCK_VIRTUAL)
+                               + ESP32_GPIO_BRIDGE_POLL_MS);
 }
 #endif
 
@@ -280,7 +306,13 @@ static void esp32_gpio_reset_hold(Object *obj, ResetType type)
 static void esp32_gpio_realize(DeviceState *dev, Error **errp)
 {
 #ifdef __EMSCRIPTEN__
-    esp32_gpio_bridge = ESP32_GPIO(dev);
+    Esp32GpioState *s = ESP32_GPIO(dev);
+
+    esp32_gpio_bridge = s;
+    s->bridge_timer = timer_new_ms(QEMU_CLOCK_VIRTUAL,
+                                   esp32_gpio_bridge_poll, s);
+    timer_mod(s->bridge_timer, qemu_clock_get_ms(QEMU_CLOCK_VIRTUAL)
+                               + ESP32_GPIO_BRIDGE_POLL_MS);
 #endif
 }
 
