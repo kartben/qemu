@@ -14,7 +14,15 @@
 #endif
 #include "tcg-target-reg-bits.h"
 
-#define MAX_CALL_IARGS  7
+/*
+ * 8, not upstream's 7: this tree adds DEF_HELPER_8 and tcg_gen_call8 for
+ * target/xtensa's FFT helpers, and helper-head.h.inc's own rule is that this
+ * must equal n for the last DEF_HELPER_FLAGS_n. Left at 7 it under-sizes
+ * tci.c's call_slots[] and trips assert(nargs <= MAX_CALL_IARGS) in
+ * tcg_gen_callN() the moment one of those helpers is translated, which is
+ * what any TCI or wasm build of xtensa-softmmu does.
+ */
+#define MAX_CALL_IARGS  8
 
 /*
  * Describe the calling convention of a given argument type.
