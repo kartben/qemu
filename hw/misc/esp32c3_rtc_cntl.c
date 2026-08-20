@@ -17,6 +17,8 @@
 #include "hw/irq.h"
 #include "hw/qdev-properties.h"
 #include "hw/misc/esp32c3_rtc_cntl.h"
+#include "hw/core/cpu.h"
+#include "exec/cpu-interrupt.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -140,6 +142,18 @@ static void esp32c3_rtc_cntl_wake(void *opaque)
                                      RTC_WAKEUP_ENA);
     s->state0 = FIELD_DP32(s->state0, RTC_CNTL_RTC_STATE0, SLEEP_EN, 0);
 
+    /*
+     * Let the core run again. Under -icount this is what makes a sleep cost
+     * its own duration and not thirty times it: a halted vCPU lets the virtual
+     * clock warp straight to this timer, where a spinning one has to be
+     * emulated through every instruction of the wait.
+     */
+    if (first_cpu) {
+        cpu_reset_interrupt(first_cpu, CPU_INTERRUPT_HALT);
+        first_cpu->halted = 0;
+        qemu_cpu_kick(first_cpu);
+    }
+
     esp32c3_rtc_status.state = ESP32C3_RTC_AWAKE;
     esp32c3_rtc_status.wake_cause = s->slp_wakeup_cause;
     esp32c3_rtc_status.total_sleep_us += esp32c3_rtc_status.last_sleep_us;
@@ -191,6 +205,18 @@ static void esp32c3_rtc_cntl_sleep(ESP32C3RtcCntlState *s)
     timer_mod_ns(s->sleep_timer, qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL)
                  + muldiv64(ticks, NANOSECONDS_PER_SECOND,
                             ESP32C3_RTC_SLOW_CLK_HZ));
+
+    /*
+     * Stop the core, which is what the part does. Both sleeps leave the guest
+     * spinning on a status bit it cannot reach from here - deep sleep never
+     * escapes at all, and only the reset ends it - so without this the wait is
+     * emulated instruction by instruction and a five second sleep takes over
+     * two minutes of wall clock in the browser. Halted, the icount clock warps
+     * to the wake and it takes five seconds.
+     */
+    if (first_cpu) {
+        cpu_interrupt(first_cpu, CPU_INTERRUPT_HALT);
+    }
 }
 
 static uint64_t esp32c3_rtc_cntl_read(void* opaque, hwaddr addr, unsigned int size)
