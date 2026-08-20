@@ -18,6 +18,7 @@
 #include "hw/irq.h"
 #include "hw/qdev-properties.h"
 #include "hw/gpio/esp32_gpio.h"
+#include "qemu/main-loop.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -240,9 +241,20 @@ void qemu_host_gpio_set_inputs(uint32_t value)
     if (s == NULL) {
         return;
     }
+    /* Called from the page, which is not a vCPU thread and holds no lock. A
+     * pin change can raise the controller's interrupt, and delivering one ends
+     * up in cpu_interrupt(), which asserts bql_locked(). Take the lock for the
+     * whole update so the guest also sees every pin move at once.
+     *
+     * Only the ESP32 tripped this in practice, because its interrupt matrix
+     * routes per-CPU and kicks the vCPU directly; the C3 survived a press
+     * without it. The requirement is the same on both, so the lock belongs
+     * here rather than in either machine. */
+    bql_lock();
     for (unsigned i = 0; i < ESP32_GPIO_PIN_COUNT; i++) {
         esp32_gpio_set_input(s, i, (value & BIT(i)) != 0);
     }
+    bql_unlock();
 }
 
 EMSCRIPTEN_KEEPALIVE
