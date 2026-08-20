@@ -29,7 +29,10 @@ config XTENSA_ESP32
     select UNIMP
     select OPENCORES_ETH
     select DWC_SDMMC
-    select TMP105
+    select CAN_SJA1000
+    select I2C
+    select HOST_I2C
+    select HOST_SPI
     select LED
     select ESP_RGB
 

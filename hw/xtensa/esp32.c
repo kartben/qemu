@@ -18,6 +18,9 @@
 #include "hw/loader.h"
 #include "hw/sysbus.h"
 #include "hw/i2c/esp32_i2c.h"
+#include "hw/i2c/host_i2c.h"
+#include "hw/ssi/host_spi.h"
+#include "net/can_browser.h"
 #include "hw/xtensa/xtensa_memory.h"
 #include "hw/misc/unimp.h"
 #include "hw/irq.h"
@@ -491,6 +494,20 @@ static void esp32_soc_realize(DeviceState *dev, Error **errp)
      * in realize function. That means that irq linking MUST be
      * performed before realization of TWAI peripheral.
      */
+
+    /* The TWAI is a real SJA1000 underneath and only carries traffic when it
+     * is linked to a bus, which nothing was doing. Give it one before realize
+     * (the link is read there), and put the page's CAN model on the other end
+     * (net/can/can_browser.c), so the guest's own controller reaches the
+     * simulated nodes rather than needing an MCP2515 on SPI to stand in. */
+    {
+        Object *canbus = object_new(TYPE_CAN_BUS);
+
+        object_property_add_child(OBJECT(s), "canbus", canbus);
+        object_property_set_link(OBJECT(&s->twai), "canbus", canbus,
+                                 &error_fatal);
+        can_browser_connect(CAN_BUS(canbus), &error_fatal);
+    }
     qdev_realize(DEVICE(&s->twai), &s->periph_bus, &error_fatal);
     esp32_soc_add_periph_device(sys_mem, &s->twai, DR_REG_CAN_BASE); 
     sysbus_connect_irq(SYS_BUS_DEVICE(&s->twai), 0,
@@ -702,6 +719,8 @@ struct Esp32MachineState {
 
     Esp32SocState esp32;
     DeviceState *flash_dev;
+    /* Chip selects are wired once every peripheral on the bus exists. */
+    Notifier hspi_done;
 };
 #define TYPE_ESP32_MACHINE MACHINE_TYPE_NAME("esp32")
 
@@ -746,6 +765,30 @@ static void esp32_machine_init_psram(Esp32SocState *ss, uint32_t size_mbytes)
                                 qdev_get_gpio_in_named(psram, SSI_GPIO_CS, 0));
 }
 
+/* An SSI peripheral learns its select is asserted through a GPIO line the
+ * controller drives, and qdev has no way to connect one until both ends exist.
+ * Machine-init-done is the first point at which they do. */
+static void esp32_hspi_connect_cs(Notifier *notifier, void *data)
+{
+    Esp32MachineState *ms = container_of(notifier, Esp32MachineState,
+                                         hspi_done);
+    DeviceState *master = DEVICE(&ms->esp32.spi[2]);
+    BusState *bus = qdev_get_child_bus(master, "spi");
+    BusChild *kid;
+
+    QTAILQ_FOREACH(kid, &bus->children, sibling) {
+        uint8_t cs = SSI_PERIPHERAL(kid->child)->cs_index;
+
+        if (cs >= ESP32_SPI_CS_COUNT) {
+            warn_report("esp32: HSPI has no chip select %u", cs);
+            continue;
+        }
+        qdev_connect_gpio_out_named(master, SSI_GPIO_CS, cs,
+                                    qdev_get_gpio_in_named(kid->child,
+                                                           SSI_GPIO_CS, 0));
+    }
+}
+
 static void esp32_machine_init_i2c(Esp32SocState *s)
 {
     /* It should be possible to create an I2C device from the command line,
@@ -757,8 +800,40 @@ static void esp32_machine_init_i2c(Esp32SocState *s)
      */
     DeviceState *i2c_master = DEVICE(&s->i2c[0]);
     I2CBus* i2c_bus = I2C_BUS(qdev_get_child_bus(i2c_master, "i2c"));
-    I2CSlave* tmp105 = i2c_slave_create_simple(i2c_bus, "tmp105", 0x48);
-    object_property_set_int(OBJECT(tmp105), "temperature", 25 * 1000, &error_fatal);
+
+    /* Everything the browser has on the bus answers through one slave, which
+     * matches whichever addresses the page says it is modelling. See
+     * hw/i2c/host_i2c.c. It takes the place of the fixed tmp105 this machine
+     * used to solder on at 0x48: the page models real thermometers among many
+     * other parts, and a device at a hardcoded address would collide with
+     * whatever it has there. */
+    i2c_slave_create_simple(i2c_bus, TYPE_HOST_I2C, 0);
+}
+
+/* Whatever the browser has soldered to HSPI answers through these, the SPI
+ * counterpart of the I2C slave above (hw/ssi/host_spi.c). One per chip select,
+ * because an SSI peripheral *is* one chip select and the page can attach a part
+ * to any of them.
+ *
+ * HSPI (spi2) rather than VSPI (spi3) because that is the controller Zephyr's
+ * esp32 devicetree describes first, and unlike the C3 there is no need for a
+ * switch to free the bus for a QEMU device: SPI1 already carries the real
+ * flash, and VSPI is left entirely alone.
+ */
+static void esp32_machine_init_host_spi(Esp32MachineState *ms)
+{
+    Esp32SocState *ss = &ms->esp32;
+    BusState *spi_bus = qdev_get_child_bus(DEVICE(&ss->spi[2]), "spi");
+
+    for (int cs = 0; cs < ESP32_SPI_CS_COUNT; cs++) {
+        DeviceState *dev = qdev_new(TYPE_HOST_SPI);
+
+        qdev_prop_set_uint8(dev, "cs", cs);
+        qdev_realize_and_unref(dev, spi_bus, &error_fatal);
+    }
+
+    ms->hspi_done.notify = esp32_hspi_connect_cs;
+    qemu_add_machine_init_done_notifier(&ms->hspi_done);
 }
 
 static void esp32_machine_init_openeth(Esp32SocState *ss)
@@ -834,6 +909,8 @@ static void esp32_machine_init(MachineState *machine)
     }
 
     esp32_machine_init_i2c(ss);
+
+    esp32_machine_init_host_spi(ms);
 
     esp32_machine_init_openeth(ss);
 
