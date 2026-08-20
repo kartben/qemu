@@ -7,8 +7,10 @@
  * it under the terms of the GNU General Public License version 2 or
  * (at your option) any later version.
  */
-#include <gcrypt.h>
 #include "qemu/osdep.h"
+#ifdef CONFIG_GCRYPT
+#include <gcrypt.h>
+#endif
 #include "hw/hw.h"
 #include "hw/sysbus.h"
 #include "qapi/error.h"

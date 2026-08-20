@@ -169,7 +169,9 @@ static void esp32_soc_reset(DeviceState *dev)
         device_cold_reset(DEVICE(&s->dport));
         device_cold_reset(DEVICE(&s->intmatrix));
         device_cold_reset(DEVICE(&s->aes));
+#ifdef CONFIG_GCRYPT
         device_cold_reset(DEVICE(&s->rsa));
+#endif
         device_cold_reset(DEVICE(&s->gpio));
         for (int i = 0; i < ESP32_UART_COUNT; ++i) {
             device_cold_reset(DEVICE(&s->uart[i]));
@@ -389,8 +391,12 @@ static void esp32_soc_realize(DeviceState *dev, Error **errp)
         sysbus_connect_irq(SYS_BUS_DEVICE(&s->crosscore_int), index, target);
     }
 
+#ifdef CONFIG_GCRYPT
     qdev_realize(DEVICE(&s->rsa), &s->periph_bus, &error_fatal);
     esp32_soc_add_periph_device(sys_mem, &s->rsa, DR_REG_RSA_BASE);
+#else
+    create_unimplemented_device("esp32.rsa", DR_REG_RSA_BASE, 0x1000);
+#endif
 
     qdev_realize(DEVICE(&s->sha), &s->periph_bus, &error_fatal);
     esp32_soc_add_periph_device(sys_mem, &s->sha, DR_REG_SHA_BASE);
@@ -639,7 +645,9 @@ static void esp32_soc_init(Object *obj)
 
     object_initialize_child(obj, "ledc", &s->ledc, TYPE_ESP32_LEDC);
 
+#ifdef CONFIG_GCRYPT
     object_initialize_child(obj, "rsa", &s->rsa, TYPE_ESP32_RSA);
+#endif
 
     object_initialize_child(obj, "efuse", &s->efuse, TYPE_ESP32_EFUSE);
 
